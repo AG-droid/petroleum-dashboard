@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRAHARI · Retail Network Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" class="brand-logo" aria-hidden="true">
+        <path d="M16 2 L29 9 V23 L16 30 L3 23 V9 Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M16 8 L23 12 V20 L16 24 L9 20 V12 Z" fill="currentColor" opacity=".25"/>
+        <circle cx="16" cy="16" r="3" fill="currentColor"/>
+      </svg>
+      <div>
+        <div class="brand-name">PRAHARI</div>
+        <div class="brand-sub">Retail Network Command</div>
+      </div>
+    </div>
+    <div class="crumbs">OMC <i>›</i> Haryana State Office <i>›</i> Gurugram Division <i>›</i> <b>Gurugram Sales Area</b></div>
+    <button id="searchBtn" class="search"><span>⌕</span> Search outlets, tankers, dealers… <kbd>⌘K</kbd></button>
+    <div class="top-right">
+      <span class="badge-sim" title="All data in this prototype is synthetic">SIMULATED DATA</span>
+      <span class="live"><i></i>LIVE</span>
+      <span id="clock" class="mono"></span>
+      <div class="user"><div class="avatar">SO</div><div><b>Sales Officer</b><small>Gurugram SA</small></div></div>
+    </div>
+  </header>
+
+  <nav id="rail">
+    <button data-view="ops" class="active" title="Operations map"><svg viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z M9 3v15 M15 6v15"/></svg><span>Ops</span></button>
+    <button data-view="outlets" title="Outlet registry"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13 M9 21v-6h6v6 M4 11h16"/></svg><span>Outlets</span></button>
+    <button data-view="logistics" title="Supply & logistics"><svg viewBox="0 0 24 24"><path d="M2 7h11v9H2z M13 10h4l3 3v3h-7 M6 19a2 2 0 100-4 2 2 0 000 4z M17 19a2 2 0 100-4 2 2 0 000 4z"/></svg><span>Supply</span></button>
+    <button data-view="surveillance" title="Surveillance"><svg viewBox="0 0 24 24"><path d="M3 7l13-3 2 6-13 3z M8 12l1 4h4 M18 9l3-1 M13 16v4h-4"/></svg><span>CCTV</span></button>
+    <button data-view="compliance" title="Compliance & inspections"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M8.5 12l2.5 2.5 4.5-5"/></svg><span>Comply</span></button>
+    <button data-view="analytics" title="Analytics"><svg viewBox="0 0 24 24"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg><span>Analytics</span></button>
+    <div class="rail-spacer"></div>
+    <button data-view="copilot" title="Copilot"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg><span>Copilot</span></button>
+  </nav>
+
+  <main id="stage">
+    <div id="map"></div>
+    <div id="mapVignette"></div>
+
+    <div id="mapControls">
+      <div class="mc-group">
+        <button class="mc-btn active" data-basemap="sat">Satellite</button>
+        <button class="mc-btn" data-basemap="dark">Dark</button>
+      </div>
+      <div class="mc-group">
+        <button class="mc-btn" id="btn3d" title="Toggle 3D tilt">3D</button>
+        <button class="mc-btn" id="btnHome" title="Reset view">⌂</button>
+      </div>
+      <div class="mc-layers">
+        <div class="mc-title">LAYERS</div>
+        <label><input type="checkbox" data-layer="outlets" checked> Retail outlets</label>
+        <label><input type="checkbox" data-layer="tankers" checked> Tank trucks (live)</label>
+        <label><input type="checkbox" data-layer="routes" checked> Delivery routes</label>
+        <label><input type="checkbox" data-layer="depots" checked> Terminals / depots</label>
+        <label><input type="checkbox" data-layer="area" checked> Sales area boundary</label>
+        <label><input type="checkbox" data-layer="competitors"> Competitor outlets</label>
+        <label><input type="checkbox" data-layer="heat"> Sales heatmap</label>
+        <label><input type="checkbox" data-layer="columns"> Volume columns (3D)</label>
+      </div>
+      <div class="mc-legend">
+        <span><i class="dot ok"></i>Healthy</span>
+        <span><i class="dot warn"></i>Attention</span>
+        <span><i class="dot crit"></i>Critical</span>
+        <span><i class="dot off"></i>Offline</span>
+      </div>
+    </div>
+
+    <aside id="leftPanel" class="panel"></aside>
+    <aside id="rightPanel" class="panel hidden"></aside>
+    <section id="overlay" class="overlay hidden"></section>
+    <div id="hud" class="mono"></div>
+  </main>
+
+  <footer id="ticker">
+    <span class="tk-label"><i></i>LIVE FEED</span>
+    <div id="tickerTrack"></div>
+  </footer>
+</div>
+
+<div id="palette" class="hidden">
+  <div class="pal-box">
+    <input id="palInput" placeholder="Search outlets, codes, dealers, localities, tanker plates…" autocomplete="off">
+    <div id="palResults"></div>
+    <div class="pal-foot"><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>↵</kbd> open <kbd>esc</kbd> close</div>
+  </div>
+</div>
+<div id="modal" class="hidden"><div class="modal-box"></div></div>
+<div id="toasts"></div>
+<div id="tooltip"></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="js/data.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/cctv.js"></script>
+<script src="js/map.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
