@@ -29,6 +29,7 @@ An internet connection is needed for the satellite imagery, map library and font
 | **Performance** | Area sales vs target, outlets furthest behind, sales by fuel, estimated market share, performance by outlet type. |
 | **Assistant** | Ask questions in plain English ("which outlets may run dry?", "how is Maa Fuel Point doing?"). Answers are computed from the live data. Rule-based prototype, not an LLM yet. |
 | **Search** | `⌘K` / `Ctrl+K` to jump to any outlet, truck, depot or view. |
+| **Present mode** | Click **Present** (or open `#tour`) for a guided demo that drives the live dashboard: story cards, spotlight, captions and a demo cursor. `→` next, `←` back, `A` auto-play, `Esc` exit. |
 
 ## Suggested 5-minute demo script
 

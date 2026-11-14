@@ -72,6 +72,8 @@ On macOS you can instead double-click [`poc/start.command`](poc/start.command). 
 
 **Shortcuts:** `⌘K` / `Ctrl+K` opens search · `Esc` closes panels.
 
+**Presenting to someone?** Click **Present** (top right) for a guided, self-driving walkthrough of the product. See [Present mode](#present-mode-guided-demo).
+
 **Deep links** (useful in demos):
 
 | Link | Opens |
@@ -81,6 +83,26 @@ On macOS you can instead double-click [`poc/start.command`](poc/start.command). 
 | `/#base=sat` | Start in satellite view (combine with others, e.g. `/#view=ops&base=sat`) |
 
 ## 4. Feature tour
+
+### Present mode (guided demo)
+
+Click **Present** in the top bar, or open `/#tour`, to turn the dashboard into its own presentation. It works like a product-demo video, but it's the real, live product:
+
+- **Story cards:** full-screen cards open and close the story, with the live dashboard blurred behind them.
+- **Spotlight:** a highlight glides from feature to feature.
+- **Captions:** plain-English captions explain what you're looking at.
+- **Demo cursor:** a cursor clicks the real buttons. It opens an outlet, sends a truck, contacts a stopped tanker's driver, holds a bad delivery and asks the assistant a question.
+
+| Key | Action |
+| --- | --- |
+| `→` / `Space` | Next step |
+| `←` | Previous step |
+| `A` | Auto-play (runs by itself, like a video) |
+| `Esc` | Exit and explore freely |
+
+Open `/#tour&auto` to start in auto-play. There are 21 steps, taking about 8–10 minutes with narration. **Watch again** reloads the page so every story starts fresh.
+
+![Present mode](docs/screenshots/11-present-mode.png)
 
 ### Operations map (home)
 
