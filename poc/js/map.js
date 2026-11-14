@@ -51,8 +51,14 @@
       if (setupDone || !(map.style && map.style._loaded)) return;
       setupDone = true;
       map.addSource('area', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [area] } } });
-      map.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.025 } });
-      map.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': '#ffffff', 'line-width': 1, 'line-dasharray': [4, 3], 'line-opacity': 0.3 } });
+      // Dim everything outside the sales area (world polygon with the area cut out as a hole)
+      const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+      map.addSource('area-mask', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [world, area.slice().reverse()] } } });
+      map.addLayer({ id: 'area-mask', type: 'fill', source: 'area-mask', paint: { 'fill-color': '#000000', 'fill-opacity': 0.28 } });
+      map.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.02 } });
+      // Dark casing under a light line keeps the edge readable on imagery
+      map.addLayer({ id: 'area-casing', type: 'line', source: 'area', layout: { 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-width': 4, 'line-opacity': 0.45, 'line-blur': 1 } });
+      map.addLayer({ id: 'area-line', type: 'line', source: 'area', layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 1.4, 'line-dasharray': [4, 3], 'line-opacity': 0.55 } });
       map.addSource('routes', { type: 'geojson', data: routesGeo() });
       map.addLayer({ id: 'routes-line', type: 'line', source: 'routes', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
         'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'sel'], 2.4, 1.2], 'line-opacity': ['case', ['get', 'sel'], 0.95, 0.45], 'line-dasharray': [2, 2] } });
@@ -181,7 +187,7 @@
     if (name === 'tankers') show(MV.tankerMk);
     if (name === 'depots') show(MV.depotMk);
     if (name === 'routes') map.setLayoutProperty('routes-line', 'visibility', vis);
-    if (name === 'area') { map.setLayoutProperty('area-fill', 'visibility', vis); map.setLayoutProperty('area-line', 'visibility', vis); }
+    if (name === 'area') ['area-mask', 'area-fill', 'area-casing', 'area-line'].forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
     if (name === 'competitors') map.setLayoutProperty('comp-dot', 'visibility', vis);
     if (name === 'heat') map.setLayoutProperty('heat', 'visibility', vis);
     if (name === 'columns') {
@@ -194,6 +200,10 @@
     MV.base = b;
     ['sat', 'roads', 'labels'].forEach((l) => MV.map.setLayoutProperty(l, 'visibility', b === 'sat' ? 'visible' : 'none'));
     ['dark', 'darkref'].forEach((l) => MV.map.setLayoutProperty(l, 'visibility', b === 'dark' ? 'visible' : 'none'));
+    // Satellite imagery is busier, so shade the outside more strongly and brighten the edge
+    MV.map.setPaintProperty('area-mask', 'fill-opacity', b === 'sat' ? 0.45 : 0.28);
+    MV.map.setPaintProperty('area-line', 'line-opacity', b === 'sat' ? 0.9 : 0.55);
+    MV.map.setPaintProperty('area-line', 'line-width', b === 'sat' ? 1.8 : 1.4);
     MV.onBasemap && MV.onBasemap(b);
   }
   // A basemap chosen by the user sticks; otherwise the map switches to satellite when zoomed into an outlet
