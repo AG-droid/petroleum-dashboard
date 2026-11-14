@@ -3,8 +3,8 @@
   'use strict';
   const intro = document.createElement('div');
   intro.id = 'intro';
-  intro.innerHTML = `<svg viewBox="0 0 32 32" class="brand-logo" style="color:#38bdf8"><path d="M16 2 L29 9 V23 L16 30 L3 23 V9 Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M16 8 L23 12 V20 L16 24 L9 20 V12 Z" fill="currentColor" opacity=".25"/><circle cx="16" cy="16" r="3" fill="currentColor"/></svg>
-    <div class="l1">PRAHARI</div><div class="l2">CONNECTING TO GURUGRAM SALES AREA · ${DB.outlets.length} OUTLETS</div><div class="loadbar"><i></i></div>`;
+  intro.innerHTML = `<div class="brand-mark"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z" fill="none" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="#111"/></svg></div>
+    <div class="l2">Loading Gurugram Sales Area</div><div class="loadbar"><i></i></div>`;
   document.body.appendChild(intro);
 
   function fail(msg) {

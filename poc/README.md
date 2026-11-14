@@ -1,4 +1,4 @@
-# PRAHARI — Retail Network Command (Proof of Concept)
+# Prahari: Sales Officer dashboard (proof of concept)
 
 A clickable, live-simulated command dashboard for an oil company **Sales Officer**, set in the **Gurugram Sales Area**. Every outlet, dealer, tanker, number and camera feed is **synthetic**: generated from a fixed seed, so it looks the same on every load.
 
@@ -20,25 +20,26 @@ An internet connection is needed for the satellite imagery, map library and font
 
 | Area | What it shows |
 | --- | --- |
-| **Ops map** (home) | Satellite / dark basemap of the sales area with 3D tilt. 44 outlets colour-coded by health, 2 supply points, 14 tank trucks moving live along their routes, sales-area boundary. Optional layers: competitor outlets, sales heatmap, 3D volume columns. |
-| **Area panel** | Today's sales vs plan, month-to-date vs target, network health, dry-out risks, truck status, compliance due. Auto-generated *Priority actions* and a live, filterable alert feed (supply, stock, quality, security, compliance, equipment, commercial). |
-| **Outlet 360** (click any outlet) | Health score, live sales by product, tank gauges with days of cover, nozzle status, live transactions, CCTV, sales trends vs target, local market share, deliveries and density checks, stock variation, licences and inspections, complaints, dealer credit and field notes. Context actions: priority dispatch, hold tank, ping automation, call dealer, schedule inspection. |
-| **Supply** | Every tank truck with route, load, progress and ETA; a replenishment watchlist; supply-point status. |
-| **CCTV** | Camera wall with simulated forecourt, entry (ANPR), decantation bay and cash-room feeds, an AI-vision overlay (vehicle and person detection, queue length, number plates) and an AI event stream. |
-| **Comply** | Upcoming licence and stamping renewals, open irregularities, and an inspection planner. |
-| **Analytics** | Area sales vs target, weakest outlets, product mix, estimated market share, performance by category. |
-| **Copilot** | Ask questions in plain English ("which outlets may dry out?", "tell me about Maa Fuel Point"). Answers are computed from the live data. This is a rule-based prototype, not an LLM yet. |
-| **Search** | `⌘K` / `Ctrl+K` to jump to any outlet, tank truck, depot or view. |
+| **Map** (home) | Neutral dark map of the sales area that switches to satellite when you zoom into an outlet, with 3D tilt. 44 outlets coloured by status, 2 supply points, 14 tank trucks moving live, sales-area boundary. Extra layers under **Layers**: competitor outlets, sales heatmap, 3D volume columns. |
+| **Area panel** | Four headline numbers, then tabs for **Priorities** (urgent items in plain English with one-click actions), **All alerts** (filterable by category) and **Activity** (dispatches, deliveries, incidents). |
+| **Outlet panel** (click any outlet) | A one-line summary of the outlet's main issue, key numbers, and tabs for tanks and pumps, sales, supply and density checks, cameras, compliance, and the dealer's account and notes. Context actions: *Send a truck now*, *Hold tank & test*, *Reconnect automation*, *Call dealer*, *Schedule visit*. |
+| **Supply & trucks** | Every tank truck with destination, load, progress and arrival time; outlets running lowest on fuel; supply-point status. |
+| **Cameras** | Camera wall with simulated forecourt, entry (number plates), unloading bay and cash-room feeds, optional AI detection boxes and a detections feed. |
+| **Compliance** | Upcoming licence and stamping renewals, open findings, and an inspection plan. |
+| **Performance** | Area sales vs target, outlets furthest behind, sales by fuel, estimated market share, performance by outlet type. |
+| **Assistant** | Ask questions in plain English ("which outlets may run dry?", "how is Maa Fuel Point doing?"). Answers are computed from the live data. Rule-based prototype, not an LLM yet. |
+| **Search** | `⌘K` / `Ctrl+K` to jump to any outlet, truck, depot or view. |
 
 ## Suggested 5-minute demo script
 
-1. **Open on the map.** The view flies in from India to Gurugram. Point out the live trucks, health colours and the ticker at the bottom.
-2. **Priority actions.** Click the dry-out risk outlet. Show the diesel tank at about 0.5 days, the indent held for payment, then press **⚡ Priority dispatch** and watch the alert resolve into "tanker en route".
-3. **Security story.** Click the halted tank truck in Priority actions: off-route for 47 min, seals unverified. Press **Contact driver & resume**.
-4. **Quality.** Open the outlet with a density mismatch, go to the Supply tab and use **Hold tank & sample**.
-5. **CCTV.** Open the CCTV wall: AI boxes, number plates, offline cameras. Click a feed to enlarge it.
-6. **Competition.** Turn on *Competitor outlets*, then open Maa Fuel Point: volume down about 20% after a new competitor opened.
-7. **Copilot.** Ask "Summarise my area right now".
+1. **Open on the map.** The view flies in from India to Gurugram. Point out the four headline numbers and the moving trucks.
+2. **Prevent a dry-out.** In *Priorities*, Royal Service Station's diesel runs out in about 13 hours and the order is on hold for payment. Press **Send a truck now**.
+3. **Security.** Truck HR55 CF 6475 has stopped off route for 47 min with seals unverified. Press **Contact driver**.
+4. **Quality.** Krishna Filling Station's last diesel delivery failed the density check. Press **Hold tank & test**.
+5. **Zoom in.** Click any outlet to fly down to it in satellite 3D.
+6. **Cameras.** Open the camera wall: detection boxes, number plates, an offline camera. Click a feed to enlarge it.
+7. **Competition.** Turn on *Competitor outlets* under Layers, then open Maa Fuel Point: sales down about 20% after a new competitor opened.
+8. **Assistant.** Ask "Summarise my area".
 
 ## Deep links (handy for demos)
 

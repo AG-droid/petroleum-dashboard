@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PRAHARI · Retail Network Command</title>
+<title>Prahari · Gurugram Sales Area</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <link href="css/styles.css" rel="stylesheet">
 </head>
@@ -14,86 +14,78 @@
 <div id="app">
   <header id="topbar">
     <div class="brand">
-      <svg viewBox="0 0 32 32" class="brand-logo" aria-hidden="true">
-        <path d="M16 2 L29 9 V23 L16 30 L3 23 V9 Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
-        <path d="M16 8 L23 12 V20 L16 24 L9 20 V12 Z" fill="currentColor" opacity=".25"/>
-        <circle cx="16" cy="16" r="3" fill="currentColor"/>
-      </svg>
-      <div>
-        <div class="brand-name">PRAHARI</div>
-        <div class="brand-sub">Retail Network Command</div>
-      </div>
+      <div class="brand-mark"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z" fill="none" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="#111"/></svg></div>
+      <span class="brand-name">Prahari</span>
     </div>
-    <div class="crumbs">OMC <i>›</i> Haryana State Office <i>›</i> Gurugram Division <i>›</i> <b>Gurugram Sales Area</b></div>
-    <button id="searchBtn" class="search"><span>⌕</span> Search outlets, tankers, dealers… <kbd>⌘K</kbd></button>
-    <div class="top-right">
-      <span class="badge-sim" title="All data in this prototype is synthetic">SIMULATED DATA</span>
-      <span class="live"><i></i>LIVE</span>
-      <span id="clock" class="mono"></span>
-      <div class="user"><div class="avatar">SO</div><div><b>Sales Officer</b><small>Gurugram SA</small></div></div>
+    <div class="tb-divider"></div>
+    <button class="area-select" id="areaSelect" title="Switch sales area">Gurugram Sales Area <span class="faint">· Haryana</span>
+      <svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--text-3)"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button id="searchBtn" class="search">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      Search outlets, trucks, dealers <kbd>⌘K</kbd></button>
+    <div class="tb-right">
+      <span class="demo-tag" title="Everything shown is generated sample data">Demo data</span>
+      <span id="clock"></span>
+      <div class="avatar" title="Sales Officer, Gurugram">SO</div>
     </div>
   </header>
 
   <nav id="rail">
-    <button data-view="ops" class="active" title="Operations map"><svg viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z M9 3v15 M15 6v15"/></svg><span>Ops</span></button>
-    <button data-view="outlets" title="Outlet registry"><svg viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13 M9 21v-6h6v6 M4 11h16"/></svg><span>Outlets</span></button>
-    <button data-view="logistics" title="Supply & logistics"><svg viewBox="0 0 24 24"><path d="M2 7h11v9H2z M13 10h4l3 3v3h-7 M6 19a2 2 0 100-4 2 2 0 000 4z M17 19a2 2 0 100-4 2 2 0 000 4z"/></svg><span>Supply</span></button>
-    <button data-view="surveillance" title="Surveillance"><svg viewBox="0 0 24 24"><path d="M3 7l13-3 2 6-13 3z M8 12l1 4h4 M18 9l3-1 M13 16v4h-4"/></svg><span>CCTV</span></button>
-    <button data-view="compliance" title="Compliance & inspections"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M8.5 12l2.5 2.5 4.5-5"/></svg><span>Comply</span></button>
-    <button data-view="analytics" title="Analytics"><svg viewBox="0 0 24 24"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg><span>Analytics</span></button>
+    <button data-view="ops" data-label="Map" class="active"><svg class="i" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
+    <button data-view="outlets" data-label="Outlets"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-5h6v5"/></svg></button>
+    <button data-view="logistics" data-label="Supply & trucks"><svg class="i" viewBox="0 0 24 24"><path d="M2 7h11v9H2zM13 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></button>
+    <button data-view="surveillance" data-label="Cameras"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg></button>
+    <button data-view="compliance" data-label="Compliance"><svg class="i" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+    <button data-view="analytics" data-label="Performance"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/></svg></button>
     <div class="rail-spacer"></div>
-    <button data-view="copilot" title="Copilot"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg><span>Copilot</span></button>
+    <button data-view="copilot" data-label="Assistant"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
   </nav>
 
   <main id="stage">
     <div id="map"></div>
-    <div id="mapVignette"></div>
 
     <div id="mapControls">
-      <div class="mc-group">
-        <button class="mc-btn active" data-basemap="sat">Satellite</button>
-        <button class="mc-btn" data-basemap="dark">Dark</button>
+      <div class="seg" id="basemapSeg">
+        <button data-basemap="dark" class="active">Map</button>
+        <button data-basemap="sat">Satellite</button>
       </div>
-      <div class="mc-group">
-        <button class="mc-btn" id="btn3d" title="Toggle 3D tilt">3D</button>
-        <button class="mc-btn" id="btnHome" title="Reset view">⌂</button>
+      <div class="seg">
+        <button id="btn3d" title="Tilt the map">3D</button>
+        <button id="btnHome" title="Show the whole area"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       </div>
-      <div class="mc-layers">
-        <div class="mc-title">LAYERS</div>
-        <label><input type="checkbox" data-layer="outlets" checked> Retail outlets</label>
-        <label><input type="checkbox" data-layer="tankers" checked> Tank trucks (live)</label>
-        <label><input type="checkbox" data-layer="routes" checked> Delivery routes</label>
-        <label><input type="checkbox" data-layer="depots" checked> Terminals / depots</label>
-        <label><input type="checkbox" data-layer="area" checked> Sales area boundary</label>
-        <label><input type="checkbox" data-layer="competitors"> Competitor outlets</label>
-        <label><input type="checkbox" data-layer="heat"> Sales heatmap</label>
-        <label><input type="checkbox" data-layer="columns"> Volume columns (3D)</label>
+      <div style="position:relative">
+        <div class="seg"><button id="btnLayers"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>Layers</button></div>
+        <div class="layers-pop hidden" id="layersPop">
+          <div class="lp-title">Show on map</div>
+          <label>Retail outlets<span class="toggle"><input type="checkbox" data-layer="outlets" checked><span></span></span></label>
+          <label>Tank trucks<span class="toggle"><input type="checkbox" data-layer="tankers" checked><span></span></span></label>
+          <label>Delivery routes<span class="toggle"><input type="checkbox" data-layer="routes" checked><span></span></span></label>
+          <label>Terminals &amp; depots<span class="toggle"><input type="checkbox" data-layer="depots" checked><span></span></span></label>
+          <label>Sales area boundary<span class="toggle"><input type="checkbox" data-layer="area" checked><span></span></span></label>
+          <label>Competitor outlets<span class="toggle"><input type="checkbox" data-layer="competitors"><span></span></span></label>
+          <label>Sales heatmap<span class="toggle"><input type="checkbox" data-layer="heat"><span></span></span></label>
+          <label>Volume columns (3D)<span class="toggle"><input type="checkbox" data-layer="columns"><span></span></span></label>
+        </div>
       </div>
-      <div class="mc-legend">
-        <span><i class="dot ok"></i>Healthy</span>
-        <span><i class="dot warn"></i>Attention</span>
-        <span><i class="dot crit"></i>Critical</span>
-        <span><i class="dot off"></i>Offline</span>
-      </div>
+    </div>
+
+    <div id="legend">
+      <span><i class="dot ok"></i>Running normally</span>
+      <span><i class="dot warn"></i>Needs attention</span>
+      <span><i class="dot crit"></i>Urgent</span>
+      <span><i class="dot off"></i>Offline</span>
     </div>
 
     <aside id="leftPanel" class="panel"></aside>
     <aside id="rightPanel" class="panel hidden"></aside>
     <section id="overlay" class="overlay hidden"></section>
-    <div id="hud" class="mono"></div>
   </main>
-
-  <footer id="ticker">
-    <span class="tk-label"><i></i>LIVE FEED</span>
-    <div id="tickerTrack"></div>
-  </footer>
 </div>
 
 <div id="palette" class="hidden">
   <div class="pal-box">
-    <input id="palInput" placeholder="Search outlets, codes, dealers, localities, tanker plates…" autocomplete="off">
+    <div class="pal-input-row"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="palInput" placeholder="Search outlets, codes, dealers, places, truck numbers" autocomplete="off"></div>
     <div id="palResults"></div>
-    <div class="pal-foot"><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>↵</kbd> open <kbd>esc</kbd> close</div>
   </div>
 </div>
 <div id="modal" class="hidden"><div class="modal-box"></div></div>

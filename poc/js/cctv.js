@@ -16,7 +16,7 @@
     x.putImageData(img, 0, 0); return c;
   }
   const NOISE = [0, 1, 2, 3].map(() => makeNoise(240, 135, 255));
-  const SCAN = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 3; const x = c.getContext('2d'); x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(0, 2, 4, 1); return c; })();
+  const SCAN = (() => { const c = document.createElement('canvas'); c.width = 4; c.height = 3; const x = c.getContext('2d'); x.fillStyle = 'rgba(0,0,0,0.1)'; x.fillRect(0, 2, 4, 1); return c; })();
 
   const CAR_COLORS = ['#c3c7cc', '#e2e2e2', '#596272', '#7d3434', '#2e3d5a', '#b9a36d', '#3c4a3c', '#f0f0f0', '#222428', '#8e9399'];
   const PLATES = () => `${['HR26', 'HR55', 'DL3C', 'HR38', 'HR29', 'UP16'][Math.floor(Math.random() * 6)]} ${['DK', 'AB', 'CZ', 'BT', 'AQ'][Math.floor(Math.random() * 5)]} ${Math.floor(1000 + Math.random() * 9000)}`;
@@ -148,10 +148,10 @@
     box(b, label, color) {
       if (!this.ai) return;
       const { ctx } = this;
-      color = color || '#38bdf8';
+      color = 'rgba(255,255,255,0.9)';
       ctx.strokeStyle = color; ctx.lineWidth = 1;
       ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6);
-      ctx.font = '600 9px JetBrains Mono, monospace';
+      ctx.font = '500 9px Inter, sans-serif';
       const tw = ctx.measureText(label).width + 6;
       ctx.fillStyle = color; ctx.fillRect(b.x - 3, b.y - 15, tw, 12);
       ctx.fillStyle = '#05080c'; ctx.fillText(label, b.x, b.y - 6);
@@ -194,12 +194,12 @@
         people.push(this.person(v.x * w + v.w * w * 0.2, y + (v.lane === 0 ? h * 0.08 : -h * 0.09), '#1d4ed8'));
       }
       boxes.forEach(([b, v]) => this.box(b, `${v.type === 'bike' ? '2W' : v.type.toUpperCase()} ${v.conf.toFixed(2)}`));
-      people.forEach((b) => this.box(b, 'STAFF', '#3ddc97'));
+      people.forEach((b) => this.box(b, 'STAFF', '#8fd3ac'));
       if (this.ai && this.w >= 300) {
         const q = Math.max(0, this.veh.filter((v) => v.state === 'in' && v.v < 0.02).length);
         ctx.font = '600 10px JetBrains Mono, monospace';
         ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 128, h - 24, 120, 16);
-        ctx.fillStyle = q >= 3 ? '#f5b942' : '#3ddc97';
+        ctx.fillStyle = q >= 3 ? '#efc77d' : '#8fd3ac';
         ctx.fillText(`QUEUE ${q} · VEH ${this.veh.length}`, w - 122, h - 12);
       }
     }
@@ -215,9 +215,9 @@
       for (const v of this.veh) {
         const y = (v.dir > 0 ? 0.64 : 0.42) * h;
         const b = this.vehicle(v, v.x * w, y, v.dir < 0);
-        if (v.x > 0.15 && v.x < 0.85) this.box(b, v.type === 'bike' ? `2W ${v.conf.toFixed(2)}` : v.plate, v.type === 'bike' ? '#38bdf8' : '#f5b942');
+        if (v.x > 0.15 && v.x < 0.85) this.box(b, v.type === 'bike' ? `2W ${v.conf.toFixed(2)}` : v.plate, v.type === 'bike' ? 'rgba(255,255,255,0.9)' : '#efc77d');
       }
-      if (this.ai && this.w >= 300) { ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 104, h - 24, 96, 16); ctx.fillStyle = '#f5b942'; ctx.fillText('ANPR ACTIVE', w - 98, h - 12); }
+      if (this.ai && this.w >= 300) { ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 104, h - 24, 96, 16); ctx.fillStyle = '#efc77d'; ctx.fillText('ANPR ACTIVE', w - 98, h - 12); }
     }
     drawDecant() {
       const { ctx, w, h } = this;
@@ -228,7 +228,7 @@
       const fps = [['MS', 0.3], ['HSD', 0.45], ['HSD', 0.6]];
       fps.forEach(([p, x]) => {
         ctx.fillStyle = '#1f2326'; ctx.beginPath(); ctx.arc(x * w, h * 0.78, h * 0.05, 0, 7); ctx.fill();
-        ctx.strokeStyle = p === 'MS' ? '#3ddc97' : '#f5b942'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = p === 'MS' ? '#8fd3ac' : '#efc77d'; ctx.lineWidth = 2; ctx.stroke();
         ctx.font = '600 9px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillText(p, x * w - 9, h * 0.92);
       });
       // tanker cycle: 0-25 absent, 25-32 arriving, 32-60 parked, 60-70 leaving
@@ -243,17 +243,17 @@
         ctx.fillStyle = '#e9e5da'; roundRect(ctx, x - tw / 2, y - th / 2, tw * 0.78, th, th / 2.2); ctx.fill();
         ctx.fillStyle = '#c0392b'; ctx.fillRect(x - tw / 2 + tw * 0.05, y - 3, tw * 0.68, 6);
         ctx.fillStyle = '#2d4a7a'; roundRect(ctx, x + tw * 0.3, y - th / 2 + 2, tw * 0.2, th - 4, 6); ctx.fill();
-        this.box({ x: x - tw / 2, y: y - th / 2, w: tw, h: th }, 'TANK TRUCK 0.97', '#f5b942');
+        this.box({ x: x - tw / 2, y: y - th / 2, w: tw, h: th }, 'TANK TRUCK 0.97', '#efc77d');
         if (c >= 34 && c < 58) {
           ctx.strokeStyle = '#111'; ctx.lineWidth = 4;
           ctx.beginPath(); ctx.moveTo(x - tw * 0.1, y + th / 2); ctx.quadraticCurveTo(x - tw * 0.05, h * 0.72, 0.45 * w, h * 0.78); ctx.stroke();
           const pb = this.person(w * 0.52 + Math.sin(this.t) * 6, h * 0.66, '#1d4ed8');
-          this.box(pb, 'PERSON', '#3ddc97');
+          this.box(pb, 'PERSON', '#8fd3ac');
         }
       }
       // cones
       [[0.76, 0.3], [0.76, 0.52]].forEach(([x, y]) => { ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.moveTo(x * w, y * h - 9); ctx.lineTo(x * w + 6, y * h + 6); ctx.lineTo(x * w - 6, y * h + 6); ctx.closePath(); ctx.fill(); });
-      if (this.ai && this.w >= 300) { ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 150, h - 24, 142, 16); ctx.fillStyle = tx != null && c >= 32 && c < 60 ? '#f5b942' : '#3ddc97'; ctx.fillText(tx != null && c >= 32 && c < 60 ? 'DECANTATION ACTIVE' : 'BAY CLEAR', w - 144, h - 12); }
+      if (this.ai && this.w >= 300) { ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 150, h - 24, 142, 16); ctx.fillStyle = tx != null && c >= 32 && c < 60 ? '#efc77d' : '#8fd3ac'; ctx.fillText(tx != null && c >= 32 && c < 60 ? 'DECANTATION ACTIVE' : 'BAY CLEAR', w - 144, h - 12); }
     }
     drawCash() {
       const { ctx, w, h } = this;
@@ -270,14 +270,14 @@
       ctx.fillStyle = '#3d4b5c'; roundRect(ctx, w * 0.5, h * 0.42, w * 0.42, h * 0.18, 4); ctx.fill();
       ctx.fillStyle = '#1b2430'; ctx.fillRect(w * 0.62, h * 0.44, w * 0.08, h * 0.06);
       const cb = this.person(w * 0.72, h * 0.34, '#1d4ed8');
-      this.box(cb, 'STAFF', '#3ddc97');
+      this.box(cb, 'STAFF', '#8fd3ac');
       const c = this.cycle;
       if (c > 8 && c < 30) {
         const px = c < 13 ? w * (0.1 + (c - 8) / 5 * 0.55) : c > 25 ? w * (0.65 - (c - 25) / 5 * 0.6) : w * 0.65;
         const pb = this.person(px, h * 0.74, '#7f8c8d');
         this.box(pb, 'PERSON 0.95');
       }
-      if (this.ai && this.w >= 300) { ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 118, h - 24, 110, 16); ctx.fillStyle = '#3ddc97'; ctx.fillText('CASH DRAWER OK', w - 112, h - 12); }
+      if (this.ai && this.w >= 300) { ctx.font = '600 10px JetBrains Mono, monospace'; ctx.fillStyle = 'rgba(5,8,12,0.7)'; ctx.fillRect(w - 118, h - 24, 110, 16); ctx.fillStyle = '#8fd3ac'; ctx.fillText('CASH DRAWER OK', w - 112, h - 12); }
     }
     drawOffline() {
       const { ctx, w, h } = this;
@@ -292,7 +292,7 @@
     }
     post() {
       const { ctx, w, h } = this;
-      ctx.globalAlpha = 0.07; ctx.drawImage(NOISE[Math.floor(this.t * 15) % 4], 0, 0, w, h); ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.04; ctx.drawImage(NOISE[Math.floor(this.t * 15) % 4], 0, 0, w, h); ctx.globalAlpha = 1;
       ctx.fillStyle = ctx.createPattern(SCAN, 'repeat'); ctx.fillRect(0, 0, w, h);
       const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)');

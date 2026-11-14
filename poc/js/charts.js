@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   const C = {
-    grid: 'rgba(120,160,190,0.10)', axis: 'rgba(120,160,190,0.35)', text: '#5d7080', text2: '#8fa3b3', accent: '#38bdf8',
+    grid: 'rgba(255,255,255,0.06)', axis: 'rgba(255,255,255,0.2)', text: '#6e737a', text2: '#a1a5ab', accent: '#7aa7ff',
   };
   function setup(canvas) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -14,7 +14,7 @@
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.font = '10.5px Inter, sans-serif';
     return { ctx, w, h };
   }
   function niceMax(v) {
@@ -42,7 +42,7 @@
     }
     ctx.textAlign = 'center';
     const step = Math.ceil(n / 6);
-    opt.labels.forEach((l, i) => { if (i % step === 0 || i === n - 1) ctx.fillText(l, X(i), h - 5); });
+    opt.labels.forEach((l, i) => { if (i % step === 0 || i === n - 1) { ctx.textAlign = i === n - 1 ? 'right' : i === 0 ? 'left' : 'center'; ctx.fillText(l, i === n - 1 ? w - pad.r : X(i), h - 5); } });
     opt.series.forEach((s) => {
       ctx.beginPath();
       s.data.forEach((v, i) => (i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v))));
@@ -80,10 +80,10 @@
         const bw = (it.value / max) * (w - pad.l - pad.r);
         ctx.fillStyle = C.text2; ctx.textAlign = 'right'; ctx.font = '11px Inter, sans-serif';
         ctx.fillText(it.label.length > 20 ? it.label.slice(0, 19) + '…' : it.label, pad.l - 8, y + bh / 2 + 4);
-        ctx.fillStyle = 'rgba(120,160,190,0.08)'; ctx.fillRect(pad.l, y + bh * 0.2, w - pad.l - pad.r, bh * 0.6);
+        ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(pad.l, y + bh * 0.2, w - pad.l - pad.r, bh * 0.6);
         ctx.fillStyle = it.color || C.accent; ctx.fillRect(pad.l, y + bh * 0.2, bw, bh * 0.6);
-        if (it.target) { const tx = pad.l + (it.target / max) * (w - pad.l - pad.r); ctx.fillStyle = '#d7e2ea'; ctx.fillRect(tx - 1, y + bh * 0.1, 2, bh * 0.8); }
-        ctx.font = '10px JetBrains Mono, monospace'; ctx.textAlign = 'left'; ctx.fillStyle = C.text2;
+        if (it.target) { const tx = pad.l + (it.target / max) * (w - pad.l - pad.r); ctx.fillStyle = '#ecedee'; ctx.fillRect(tx - 1, y + bh * 0.1, 2, bh * 0.8); }
+        ctx.font = '10.5px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = C.text2;
         ctx.fillText(opt.fmt ? opt.fmt(it.value) : it.value.toFixed(1), pad.l + bw + 6, y + bh / 2 + 3);
       });
     } else {
@@ -118,7 +118,7 @@
       ctx.fillStyle = it.color; ctx.fill();
       a0 = a1;
     });
-    ctx.fillStyle = '#d7e2ea'; ctx.textAlign = 'center'; ctx.font = '600 15px JetBrains Mono, monospace';
+    ctx.fillStyle = '#ecedee'; ctx.textAlign = 'center'; ctx.font = '600 16px Inter, sans-serif';
     ctx.fillText(opt.center || '', cx, cy + 3);
     ctx.font = '10px Inter, sans-serif'; ctx.fillStyle = C.text;
     ctx.fillText(opt.centerSub || '', cx, cy + 17);
@@ -127,7 +127,7 @@
     opt.items.forEach((it) => {
       ctx.fillStyle = it.color; ctx.fillRect(cx + R + 18, y - 8, 9, 9);
       ctx.fillStyle = C.text2; ctx.font = '11.5px Inter, sans-serif'; ctx.fillText(it.label, cx + R + 34, y);
-      ctx.fillStyle = '#d7e2ea'; ctx.font = '11px JetBrains Mono, monospace';
+      ctx.fillStyle = '#ecedee'; ctx.font = '500 11.5px Inter, sans-serif';
       ctx.fillText(((it.value / total) * 100).toFixed(1) + '%', cx + R + 34 + Math.max(110, ctx.measureText(it.label).width + 14), y);
       y += 20;
     });

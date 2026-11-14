@@ -52,7 +52,7 @@ PRAHARI (Hindi for *sentinel*) puts every piece of the territory on one live map
 - **Proactive alerts:** dry-out risk, stock variation, density mismatch, trucks halted off-route, lapsed licences, equipment faults, offline cameras, falling sales.
 - **Act, not just view:** priority dispatch, hold a tank and send a sample, contact a driver, schedule an inspection, remind a dealer.
 - **Live monitoring:** tank levels drain, transactions stream, trucks move, CCTV feeds run with an AI-vision overlay.
-- **Copilot:** ask questions about the area in plain language.
+- **Assistant:** ask questions about the area in plain language.
 
 ## 3. Quick start
 
@@ -83,13 +83,15 @@ On macOS you can instead double-click [`poc/start.command`](poc/start.command). 
 
 ### Operations map (home)
 
-The landing view flies in from all of India to the sales area.
+The landing view flies in from all of India to the sales area. It's designed to be readable at a glance by someone seeing it for the first time.
 
-- **Basemap:** satellite or dark, with **3D tilt**.
-- **Map contents:** 44 outlets coloured by health, 2 supply points, 14 tank trucks moving along their delivery routes, and the sales-area boundary.
-- **Optional layers:** competitor outlets, a sales heatmap and 3D volume columns.
-- **Left panel:** area KPIs, auto-generated **priority actions**, and a live **alert feed** you can filter by category.
-- **Bottom ticker:** streams transactions, dispatches, deliveries and alerts as they happen.
+- **Map:** a neutral dark map of the area that switches to **satellite** automatically when you zoom into an outlet. You can also pick either one yourself, and tilt the map in **3D**.
+- **On the map:** 44 outlets coloured by status (running normally, needs attention, urgent, offline), 2 supply points, 14 tank trucks moving along their delivery routes, and the sales-area boundary.
+- **Layers** (top-right button): competitor outlets, a sales heatmap and 3D volume columns.
+- **Left panel:** four headline numbers (sold today, this month against target, outlets needing attention, trucks on the road), then three tabs:
+  - **Priorities:** urgent items in plain English, each with a one-click action such as *Send a truck now* or *Contact driver*.
+  - **All alerts:** every alert, filterable by category.
+  - **Activity:** dispatches, deliveries and incidents as they happen.
 
 ### Outlet 360
 
@@ -99,28 +101,30 @@ Click any outlet. The map flies down to it in 3D and the detail panel opens.
 | --- | --- |
 | ![Outlet overview](docs/screenshots/02-outlet-overview.png) | ![Outlet cameras](docs/screenshots/03-outlet-cameras.png) |
 
+The top of the panel sums up the outlet's most important issue in one sentence, for example *"Diesel runs out in about 13 hours. The order is on hold until the dealer's payment clears."* Below that are four numbers: sold today, lowest stock, this month and health.
+
 The panel has six tabs:
 
-- **Overview:** sales today against plan, tank gauges with days of cover, ullage, water and temperature, nozzle status, live transactions, a camera preview and open alerts.
+- **Overview:** tanks with days of fuel left, pump status, recent sales, a camera preview and open alerts.
 - **Sales:** month-to-date against target, 7-day trend, estimated local market share, a 30-day chart, product mix and today's hourly profile.
 - **Supply:** next delivery with ETA, seals and invoice; stock cover by product; indents and receipts with density checks; stock variation chart.
 - **Cameras:** every camera at the outlet, with recent AI detections.
 - **Compliance:** licences with days left, open irregularities, inspection history and complaints.
 - **Dealer:** contact details, credit limit, outstanding and overdue amounts, and field notes.
 
-The header also shows **context actions**, such as ⚡ Priority dispatch, Hold tank & sample, Ping automation, Call dealer and Schedule inspection.
+The header also shows **context actions**. *Send a truck now*, *Hold tank & test* and *Reconnect automation* appear only when relevant; *Call dealer* and *Schedule visit* are always there.
 
 ![Outlet sales tab](docs/screenshots/04-outlet-sales.png)
 
-### CCTV & AI vision
+### Cameras & AI vision
 
-A camera wall across priority outlets. The feeds cover the forecourt, entry/exit (with number-plate reading), the decantation bay and the cash room. They're drawn procedurally, with AI bounding boxes, queue counts and an AI event stream. Click any feed to enlarge it, take a snapshot or use talk-down.
+A camera wall for the outlets that need attention most. The feeds cover the forecourt, entry/exit (with number-plate reading), the unloading bay and the cash room. They're drawn procedurally, with AI detection boxes (which can be hidden), queue counts and a detections feed. Click any feed to enlarge it, save a snapshot or speak to the site.
 
 ![CCTV wall](docs/screenshots/05-cctv-wall.png)
 
 ### Supply & logistics
 
-Every tank truck with its route, load, status, progress and ETA. Below that are a replenishment watchlist of the outlets with the lowest stock cover, and supply-point status. Click a truck to track it on the map. A halted truck can be resolved with **Contact driver**.
+Every tank truck with its destination, load, status, progress and arrival time. Below that are the outlets running lowest on fuel, with a *Send a truck* button, and supply-point status. Click a truck to track it on the map. A truck stopped off route can be resolved with **Contact driver**.
 
 ![Supply and logistics](docs/screenshots/06-supply.png)
 
@@ -142,23 +146,24 @@ A sortable, filterable table of every outlet: status, sales today, achievement, 
 
 ![Outlet registry](docs/screenshots/09-outlets.png)
 
-### Copilot (prototype)
+### Assistant (prototype)
 
-Ask questions in plain language, such as *"Summarise my area right now"*, *"Which outlets may dry out?"* or *"Tell me about Maa Fuel Point"*. Answers are computed from the live data, with clickable links to outlets and trucks. It is rule-based today; an LLM would replace it in a later phase.
+Ask questions in plain language, such as *"Summarise my area"*, *"Which outlets may run dry?"* or *"How is Maa Fuel Point doing?"*. Answers are computed from the live data, with clickable links to outlets and trucks. It is rule-based today; an LLM would replace it in a later phase.
 
-![Copilot](docs/screenshots/10-copilot.png)
+![Assistant](docs/screenshots/10-copilot.png)
 
 ## 5. Five-minute demo script
 
 The synthetic data includes scripted storylines so a demo always has something real-looking to act on.
 
-1. **The big picture.** Let the intro fly in. Point out the live trucks, the health colours and the ticker.
-2. **Prevent a dry-out.** Under *Priority actions*, click **Royal Service Station**. It has about 0.5 days of diesel left and its indent is held for payment. Press **⚡ Priority dispatch** and watch the critical alert turn into *"tanker en route"*.
-3. **A security incident.** Click the halted truck **HR55 CF 6475**, stopped off-route for 47+ minutes with seals unverified. Press **Contact driver & resume**.
-4. **A quality issue.** Open **Krishna Filling Station**, then the **Supply** tab. Diesel density is off by +4.2 kg/m³. Use **Hold tank & sample**.
-5. **Surveillance.** Open **CCTV**: AI boxes, number plates, and an offline camera. Click a feed to enlarge it.
-6. **Competition.** Turn on the *Competitor outlets* layer, then open **Maa Fuel Point**. Volume is down about 20% week-on-week after a new competitor opened.
-7. **Copilot.** Ask *"Summarise my area right now"*.
+1. **The big picture.** Let the intro fly in. Point out the four headline numbers, the coloured outlets and the moving trucks.
+2. **Prevent a dry-out.** In *Priorities*, find **Royal Service Station**: diesel runs out in about 13 hours and the order is on hold for payment. Press **Send a truck now** and watch the urgent item clear.
+3. **A security incident.** Truck **HR55 CF 6475** has stopped off route for 47+ minutes with seals unverified. Press **Contact driver**.
+4. **A quality issue.** **Krishna Filling Station**'s last diesel delivery failed the density check. Press **Hold tank & test**.
+5. **Zoom in.** Click any outlet. The map flies down to it in satellite 3D and the outlet panel opens.
+6. **Cameras.** Open **Cameras** in the left rail: detection boxes, number plates, and an offline camera. Click a feed to enlarge it.
+7. **Competition.** Turn on *Competitor outlets* under **Layers**, then open **Maa Fuel Point**. Sales are down about 20% on last week after a new competitor opened.
+8. **Assistant.** Ask *"Summarise my area"*.
 
 ## 6. How the POC works
 
@@ -178,7 +183,7 @@ data.js  ──►  sim.js  ──►  map.js / ui.js / cctv.js / charts.js
 | [`poc/js/data.js`](poc/js/data.js) | Generates the synthetic world from a fixed seed: roads of the Gurugram area, 44 outlets (tanks, nozzles, cameras, 30-day sales history, licences, inspections, dealer credit), 2 depots, 14 tank trucks with routes, competitor outlets, the sales-area boundary, and the **scripted storylines**. |
 | [`poc/js/sim.js`](poc/js/sim.js) | The live engine. Each second it accrues sales by hourly demand profile, drains tanks, moves trucks (load → transit → unload → return → reassign to the lowest-stock outlet), lands deliveries, computes derived metrics (days of cover, achievement, trend, health score), runs the **alert rules engine** and generates random field events (camera offline, nozzle fault, complaints, AI detections). Also exposes the actions triggered from the UI. |
 | [`poc/js/map.js`](poc/js/map.js) | The MapLibre GL map: satellite and dark basemaps, outlet, depot and truck markers, routes, boundary, competitor, heatmap and 3D-column layers, camera fly-to. |
-| [`poc/js/ui.js`](poc/js/ui.js) | Everything else on screen: area panel, alert feed, outlet 360 tabs, the six views, copilot intent matching, search palette, ticker, toasts. |
+| [`poc/js/ui.js`](poc/js/ui.js) | Everything else on screen: area panel, alert feed, outlet 360 tabs, the six views, assistant intent matching, search palette, ticker, toasts. |
 | [`poc/js/cctv.js`](poc/js/cctv.js) | Procedurally drawn CCTV scenes (vehicles queue and fuel, tankers decant, number plates are read) with an AI bounding-box overlay, noise, scanlines and timestamps. |
 | [`poc/js/charts.js`](poc/js/charts.js) | Small dependency-free canvas charts (line, bar, donut). |
 | [`poc/js/main.js`](poc/js/main.js) | Startup, intro splash, deep-link handling. |
