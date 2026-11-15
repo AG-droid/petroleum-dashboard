@@ -109,6 +109,14 @@ def import_file(
     )
     session.add(job)
 
+    parsed = parsed or _parse(path)
+    if parsed.kind is None:
+        job.errors = [RowError(0, None, parsed.error or "unrecognised file").as_dict()]
+        job.finished_at = now_utc()
+        session.flush()
+        return job
+    job.kind = parsed.kind.value
+
     already = session.scalar(
         select(ImportJob.id).where(ImportJob.sha256 == digest, ImportJob.status == "succeeded").limit(1)
     )
@@ -119,14 +127,6 @@ def import_file(
         ]
         session.flush()
         return job
-
-    parsed = parsed or _parse(path)
-    if parsed.kind is None:
-        job.errors = [RowError(0, None, parsed.error or "unrecognised file").as_dict()]
-        job.finished_at = now_utc()
-        session.flush()
-        return job
-    job.kind = parsed.kind.value
 
     try:
         with session.begin_nested():
