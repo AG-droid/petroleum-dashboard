@@ -62,7 +62,7 @@
     { kind: 'hero', setup: () => { home(false); MapView.intro(); }, html: () => `
         <div class="h-item h-brand"><div class="brand-mark"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z" fill="none" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="#111"/></svg></div>Prahari</div>
         <h1 class="h-item">One screen for every<br>petrol pump in your area</h1>
-        <p class="h-item h-lead">A live look at the Gurugram Sales Area: ${DB.outlets.length} outlets, ${DB.depots.length} supply depots and ${DB.tankers.length} tankers, all on one map.</p>
+        <p class="h-item h-lead">A live look at the Gurugram Retail Sales Area: ${DB.outlets.length} outlets, ${DB.depots.length} supply depots and ${DB.tankers.length} tankers, all on one map.</p>
         <div class="h-item h-start"><button class="btn primary" data-tour="next">Start the tour</button><span class="faint">or press →</span></div>` },
     { kind: 'hero', setup: () => home(false), html: () => `
         <div class="h-item h-kicker">Today</div>

@@ -40,6 +40,7 @@ def outlet_summary(st: OutletState, open_alerts: Counter[int]) -> schemas.Outlet
         code=o.code,
         sap_code=o.sap_code,
         name=o.name,
+        market_class=o.market_class,
         category=o.category,
         lat=o.lat,
         lng=o.lng,
@@ -99,7 +100,8 @@ def area_out(session: Session, states: list[OutletState], now: datetime) -> sche
     return schemas.AreaOut(
         code=area.code if area else "",
         name=area.name if area else "No sales area loaded",
-        division=area.division if area else None,
+        divisional_office=area.divisional_office if area else None,
+        state_office=area.state_office if area else None,
         boundary=area.boundary if area else None,
         depots=depots,
         business_date=states[0].business_date if states else now.date(),

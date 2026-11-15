@@ -1,6 +1,6 @@
 """One importer per file kind: validate each row, then upsert the accepted ones.
 
-Imports are **idempotent**: every record has a natural key (SAP code + tank number, invoice +
+Imports are **idempotent**: every record has a natural key (RO code + tank number, invoice +
 tank, nozzle + business date, ...) and re-importing a file updates rows instead of duplicating
 them. Rows that fail validation are reported with their row number and reason; the rest load.
 """
@@ -11,17 +11,17 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError, model_validator
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from prahari.domain.calibration import volume_from_dip
 from prahari.ingest import parse
-from prahari.ingest.formats import SAP, FileKind
+from prahari.ingest.formats import RO, FileKind
 from prahari.ingest.reader import Table
 from prahari.models import (
     Dealer,
@@ -80,18 +80,16 @@ class _Lookups:
 
     def __init__(self, session: Session) -> None:
         self.session = session
-        self.outlets: dict[str, int] = dict(
-            session.execute(select(Outlet.sap_code, Outlet.id)).tuples().all()
-        )
+        self.outlets: dict[str, int] = dict(session.execute(select(Outlet.code, Outlet.id)).tuples().all())
         self.tanks = {(t.outlet_id, t.tank_no): t for t in session.scalars(select(Tank))}
         self.nozzles = {(n.outlet_id, n.nozzle_no): n for n in session.scalars(select(Nozzle))}
         self.products = set(session.scalars(select(Product.code)))
 
     def outlet(self, values: dict[str, Any]) -> int:
-        sap = _get(values, SAP, parse.code, max_len=16)
-        if sap not in self.outlets:
-            raise _CellError(SAP, f"{SAP} {sap} is not in the outlet master (import RO_MASTER first)")
-        return self.outlets[sap]
+        ro = _get(values, RO, parse.ro_code)
+        if ro not in self.outlets:
+            raise _CellError(RO, f"{RO} {ro} is not in the outlet master (import RO_MASTER first)")
+        return self.outlets[ro]
 
     def product(self, values: dict[str, Any], column: str = "PRODUCT") -> str:
         p = _get(values, column, parse.product)
@@ -128,6 +126,7 @@ def _run(
     ``key`` names the record fields that form the natural key. A key repeated within one file
     (e.g. a dip entered twice) is rejected as a duplicate of the earlier row: a single upsert
     statement can't touch the same row twice, and the first entry is the one on the register.
+    ``also_unique`` are other unique columns checked the same way.
     """
     result = ImportResult(total=len(table.rows))
     records: list[dict[str, Any]] = []
@@ -141,7 +140,12 @@ def _run(
         except ValueError as exc:
             result.errors.append(RowError(row_no, None, str(exc)))
             continue
-        ks = [(n, *(record[f] for f in fields)) for n, fields in enumerate((key, *also_unique))]
+        # Blank values (e.g. an optional SAP code) never clash, as in a SQL unique column.
+        ks = [
+            k
+            for n, fields in enumerate((key, *also_unique))
+            if None not in (k := (n, *(record[f] for f in fields)))[1:]
+        ]
         clash = next((first_row[k] for k in ks if k in first_row), None)
         if clash is not None:
             result.errors.append(RowError(row_no, None, f"duplicate of row {clash}"))
@@ -177,9 +181,23 @@ class _ProductIn(BaseModel):
 
     code: str = Field(min_length=1, max_length=8)
     name: str = Field(min_length=1, max_length=60)
-    price_per_l: float = Field(gt=0, lt=1000)
-    density_min: float = Field(gt=600, lt=1000)
-    density_max: float = Field(gt=600, lt=1000)
+    unit: Literal["L", "kg"] = "L"
+    price_per_l: float = Field(gt=0, lt=1000)  # ₹ per unit
+    # Density bounds (kg/m³ at 15 °C) are required for liquids, where receipts are density-checked.
+    density_min: float | None = Field(None, gt=600, lt=1000)
+    density_max: float | None = Field(None, gt=600, lt=1000)
+
+    @model_validator(mode="after")
+    def _density(self) -> _ProductIn:
+        if self.unit == "L" and (self.density_min is None or self.density_max is None):
+            raise ValueError(f"{self.code}: liquid products need density_min and density_max")
+        if (
+            self.density_min is not None
+            and self.density_max is not None
+            and self.density_min > self.density_max
+        ):
+            raise ValueError(f"{self.code}: density_min is above density_max")
+        return self
 
 
 class _DepotIn(BaseModel):
@@ -197,7 +215,10 @@ class _SalesAreaIn(BaseModel):
 
     code: str = Field(min_length=1, max_length=16)
     name: str = Field(min_length=1, max_length=120)
-    division: str | None = Field(None, max_length=120)
+    # "division" is the field's older name, still accepted.
+    divisional_office: str | None = Field(
+        None, max_length=120, validation_alias=AliasChoices("divisional_office", "division")
+    )
     state_office: str | None = Field(None, max_length=120)
     boundary: list[list[float]] | None = None
     products: list[_ProductIn] = Field(default_factory=list)
@@ -223,7 +244,7 @@ def import_sales_area(session: Session, path: Path) -> ImportResult:
     _upsert(
         session,
         SalesArea,
-        [doc.model_dump(include={"code", "name", "division", "state_office", "boundary"})],
+        [doc.model_dump(include={"code", "name", "divisional_office", "state_office", "boundary"})],
         ["code"],
     )
     if doc.products:
@@ -241,7 +262,10 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
     areas = list(session.scalars(select(SalesArea)))
     if not areas:
         return ImportResult(total=len(table.rows), errors=[RowError(0, None, "import SALES_AREA.json first")])
-    existing = {o.sap_code: o for o in session.scalars(select(Outlet))}
+    existing = {o.code: o for o in session.scalars(select(Outlet))}
+    # The SAP code is unique too: a code already held by another outlet is a row error, not a
+    # database error that would reject the whole file.
+    sap_owner = {o.sap_code: o.code for o in existing.values() if o.sap_code}
 
     def area_id(values: dict[str, Any]) -> int:
         name = _get(values, "SALES_AREA", parse.text).lower()
@@ -251,18 +275,19 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
         raise _CellError("SALES_AREA", f"SALES_AREA {name!r} is not a known sales area")
 
     def build(v: dict[str, Any]) -> dict[str, Any]:
-        category = _get(v, "CATEGORY", parse.text).title()
-        if category not in {"Highway", "Urban", "Rural"}:
-            raise _CellError("CATEGORY", f"CATEGORY {category!r} must be Highway, Urban or Rural")
         ownership = _get(v, "RO_TYPE", parse.text).upper()
         if ownership not in {"DODO", "CODO", "COCO"}:
             raise _CellError("RO_TYPE", f"RO_TYPE {ownership!r} must be DODO, CODO or COCO")
+        code = _get(v, RO, parse.ro_code)
+        sap = _get(v, "SAP_CUST_CODE", parse.optional_code, max_len=16)
+        if sap and sap_owner.get(sap, code) != code:
+            raise _CellError("SAP_CUST_CODE", f"SAP_CUST_CODE {sap} already belongs to RO {sap_owner[sap]}")
         return {
-            "sap_code": _get(v, SAP, parse.code, max_len=16),
-            "code": _get(v, "RO_REF", parse.code, max_len=16),
+            "code": code,
+            "sap_code": sap,
             "name": _get(v, "RO_NAME", parse.text, max_len=120),
             "sales_area_id": area_id(v),
-            "category": category,
+            "market_class": _get(v, "CLASS_OF_MARKET", parse.market_class),
             "ownership": ownership,
             "is_ksk": _get(v, "KSK", parse.yes_no),
             "locality": _get(v, "LOCATION", parse.optional_text),
@@ -282,7 +307,7 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
     def write(records: list[dict[str, Any]]) -> None:
         for r in records:
             dealer_data = r.pop("_dealer")
-            outlet = existing.get(r["sap_code"])
+            outlet = existing.get(r["code"])
             if outlet is None:
                 outlet = Outlet(**r)
                 session.add(outlet)
@@ -296,7 +321,7 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
                     setattr(outlet.dealer, k, val)
         session.flush()
 
-    return _run(table, build, write, ["sap_code"], ["code"])  # both are unique columns
+    return _run(table, build, write, ["code"], ["sap_code"])  # both are unique columns
 
 
 def import_tank_master(session: Session, table: Table) -> ImportResult:

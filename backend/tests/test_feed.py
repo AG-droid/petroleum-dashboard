@@ -37,7 +37,7 @@ def test_offline_and_manual_sites_are_not_fed(samples_dir: Path) -> None:
         hours=3
     )
     fed = {s["site_id"] for s in build_batch(state, at, IST)["snapshots"]}
-    expected = {s["sap_code"] for s in state["sites"] if s["automated"] and s["online"]}
+    expected = {s["ro_code"] for s in state["sites"] if s["automated"] and s["online"]}
     assert fed == expected and len(fed) < len(state["sites"])
 
 

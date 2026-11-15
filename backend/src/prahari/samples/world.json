@@ -1,13 +1,13 @@
 {
  "schema": 1,
  "note": "Synthetic data. Every outlet, dealer, number and plate is fictional.",
- "exported_at": "2026-11-15T10:20:03.840Z",
+ "exported_at": "2026-11-15T13:47:01.987Z",
  "meta": {
-  "salesArea": "Gurugram Sales Area",
-  "division": "Gurugram Division",
+  "salesArea": "Gurugram Retail Sales Area",
+  "division": "Gurugram Divisional Office",
   "state": "Haryana State Office",
-  "officer": "Sales Officer, Gurugram SA",
-  "generatedAt": 1794738003840
+  "officer": "Sales Officer, Gurugram Retail Sales Area",
+  "generatedAt": 1794750421987
  },
  "products": [
   {
@@ -42,78 +42,75 @@
   {
    "id": "DEP-BJW",
    "name": "Bijwasan Terminal",
-   "lng": 77.052,
-   "lat": 28.548,
+   "lng": 77.05419451056058,
+   "lat": 28.549262815384672,
    "capacity_kl": 98000
   },
   {
    "id": "DEP-RWR",
    "name": "Rewari Depot",
-   "lng": 76.628,
-   "lat": 28.178,
+   "lng": 76.62713659163354,
+   "lat": 28.17964067107283,
    "capacity_kl": 42000
   }
  ],
  "area": [
   [
-   76.58038204345394,
-   28.06369423735313
+   76.56991722439781,
+   28.074373490746524
   ],
   [
-   77.09505880439357,
-   28.24172096676298
+   77.09491371908832,
+   28.24140235585851
   ],
   [
-   77.28693233238262,
-   28.43166694609729
+   77.27620482395936,
+   28.430616894993605
   ],
   [
-   77.07898827592703,
-   28.582389956363038
+   77.08022384528067,
+   28.583676249977085
   ],
   [
-   77.05792340434317,
-   28.579379609614794
+   77.0630363988365,
+   28.5746020250459
   ],
   [
-   76.8281468068047,
-   28.39099386668345
+   76.78810206094062,
+   28.376352224832516
   ],
   [
-   76.77190832829973,
-   28.320167369893024
+   76.58191897608238,
+   28.149699448347818
   ],
   [
-   76.58410827592702,
-   28.147989956363038
-  ],
-  [
-   76.58038204345394,
-   28.06369423735313
+   76.56991722439781,
+   28.074373490746524
   ]
  ],
  "stories": {
-  "dryout": "GGN-104",
-  "covered": "GGN-114",
-  "variation": "GGN-121",
-  "density": "GGN-109",
-  "licence": "GGN-131",
-  "offline": "GGN-127",
-  "decline": "GGN-102",
-  "stamp": "GGN-118"
+  "dryout": "990104",
+  "covered": "990114",
+  "variation": "990121",
+  "density": "990109",
+  "licence": "990131",
+  "offline": "990127",
+  "decline": "990102",
+  "stamp": "990118"
  },
  "outlets": [
   {
-   "code": "GGN-101",
+   "code": "990101",
    "name": "National Fuel Point",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Sirhaul",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Sirhaul, NH-48 (Delhi–Jaipur)",
-   "lng": 77.08732757080043,
-   "lat": 28.493750613061152,
+   "lng": 77.08279969250746,
+   "lat": 28.491816652674608,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -507,16 +504,17 @@
    ]
   },
   {
-   "code": "GGN-102",
+   "code": "990102",
    "name": "Maa Fuel Point",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "IFFCO Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "IFFCO Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 77.03646663376168,
-   "lat": 28.44421955936641,
+   "lng": 77.0287530715002,
+   "lat": 28.446700992312998,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -885,16 +883,17 @@
    ]
   },
   {
-   "code": "GGN-103",
+   "code": "990103",
    "name": "Gurukul Service Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Rajiv Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Rajiv Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.98691665502501,
-   "lat": 28.40541964898754,
+   "lng": 76.98911905245832,
+   "lat": 28.403608240279738,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -1277,16 +1276,17 @@
    ]
   },
   {
-   "code": "GGN-104",
+   "code": "990104",
    "name": "Royal Service Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Rajiv Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Rajiv Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.96616451119573,
-   "lat": 28.38691636256907,
+   "lng": 76.96870477194092,
+   "lat": 28.3826971235868,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -1645,16 +1645,17 @@
    ]
   },
   {
-   "code": "GGN-105",
+   "code": "990105",
    "name": "Shiv Fuel Point",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Hero Honda Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Hero Honda Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.91215676051107,
-   "lat": 28.337796585767176,
+   "lng": 76.92518502036778,
+   "lat": 28.337179594044116,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -2076,16 +2077,17 @@
    ]
   },
   {
-   "code": "GGN-106",
+   "code": "990106",
    "name": "Jai Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "Kherki Daula",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Kherki Daula, NH-48 (Delhi–Jaipur)",
-   "lng": 76.87758169055544,
-   "lat": 28.31808926208808,
+   "lng": 76.89044701283055,
+   "lat": 28.315420066902306,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -2482,16 +2484,17 @@
    ]
   },
   {
-   "code": "GGN-107",
+   "code": "990107",
    "name": "Haryana Auto Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "Manesar",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Manesar, NH-48 (Delhi–Jaipur)",
-   "lng": 76.8458562673742,
-   "lat": 28.277028194418733,
+   "lng": 76.85031582016451,
+   "lat": 28.27939049962061,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -2832,16 +2835,17 @@
    ]
   },
   {
-   "code": "GGN-108",
+   "code": "990108",
    "name": "Royal Fuel Centre",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Bilaspur Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Bilaspur Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.79402264866484,
-   "lat": 28.210550082230412,
+   "lng": 76.793996748565,
+   "lat": 28.212098047006766,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -3235,16 +3239,17 @@
    ]
   },
   {
-   "code": "GGN-109",
+   "code": "990109",
    "name": "Krishna Filling Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "CODO",
    "ksk": false,
    "locality": "Bilaspur Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Bilaspur Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.7715073626641,
-   "lat": 28.191559460153243,
+   "lng": 76.76662153648691,
+   "lat": 28.204688119932374,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -3680,16 +3685,17 @@
    ]
   },
   {
-   "code": "GGN-110",
+   "code": "990110",
    "name": "Kesar Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "Dharuhera",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Dharuhera, NH-48 (Delhi–Jaipur)",
-   "lng": 76.71791118346641,
-   "lat": 28.1507313801109,
+   "lng": 76.70519867992745,
+   "lat": 28.174162488422198,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -4083,16 +4089,17 @@
    ]
   },
   {
-   "code": "GGN-111",
+   "code": "990111",
    "name": "Cyber Filling Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "CODO",
    "ksk": false,
    "locality": "Kapriwas",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Kapriwas, NH-48 (Delhi–Jaipur)",
-   "lng": 76.68456434846394,
-   "lat": 28.13220100410268,
+   "lng": 76.67460208811995,
+   "lat": 28.152541644813336,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -4461,16 +4468,17 @@
    ]
   },
   {
-   "code": "GGN-112",
+   "code": "990112",
    "name": "Aravali Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Bawal",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Bawal, NH-48 (Delhi–Jaipur)",
-   "lng": 76.62467300672046,
-   "lat": 28.102735965169725,
+   "lng": 76.61642074191518,
+   "lat": 28.11238535178596,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -4892,16 +4900,17 @@
    ]
   },
   {
-   "code": "GGN-113",
+   "code": "990113",
    "name": "Ganpati Fuels",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Subhash Chowk",
    "road": "Sohna Road (NH-248A)",
    "address": "Subhash Chowk, Sohna Road (NH-248A)",
-   "lng": 77.04136404107558,
-   "lat": 28.436404282062544,
+   "lng": 77.035960520702,
+   "lat": 28.433211192366635,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -5259,16 +5268,17 @@
    ]
   },
   {
-   "code": "GGN-114",
+   "code": "990114",
    "name": "Gurukul Fuels",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Badshahpur",
    "road": "Sohna Road (NH-248A)",
    "address": "Badshahpur, Sohna Road (NH-248A)",
-   "lng": 77.04388373270625,
-   "lat": 28.401430390531015,
+   "lng": 77.04527101425685,
+   "lat": 28.399980798041263,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -5640,16 +5650,17 @@
    ]
   },
   {
-   "code": "GGN-115",
+   "code": "990115",
    "name": "Kanha Fuel Centre",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Vatika Chowk",
    "road": "Sohna Road (NH-248A)",
    "address": "Vatika Chowk, Sohna Road (NH-248A)",
-   "lng": 77.04882233028245,
-   "lat": 28.369603332653686,
+   "lng": 77.05873553410586,
+   "lat": 28.367547470476055,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -5968,16 +5979,17 @@
    ]
   },
   {
-   "code": "GGN-116",
+   "code": "990116",
    "name": "Ganpati Filling Station",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Bhondsi",
    "road": "Sohna Road (NH-248A)",
    "address": "Bhondsi, Sohna Road (NH-248A)",
-   "lng": 77.0490676661487,
-   "lat": 28.34090334298053,
+   "lng": 77.06789874711934,
+   "lat": 28.340513652195106,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -6349,16 +6361,17 @@
    ]
   },
   {
-   "code": "GGN-117",
+   "code": "990117",
    "name": "Durga Petroleum",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Raisina",
    "road": "Sohna Road (NH-248A)",
    "address": "Raisina, Sohna Road (NH-248A)",
-   "lng": 77.05962248301189,
-   "lat": 28.30455675983014,
+   "lng": 77.06681764060946,
+   "lat": 28.307229780721496,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -6730,16 +6743,17 @@
    ]
   },
   {
-   "code": "GGN-118",
+   "code": "990118",
    "name": "Aravali Petroleum",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sohna",
    "road": "Sohna Road (NH-248A)",
    "address": "Sohna, Sohna Road (NH-248A)",
-   "lng": 77.06634868613084,
-   "lat": 28.261688402142806,
+   "lng": 77.06731046931742,
+   "lat": 28.26151826706452,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -7111,16 +7125,17 @@
    ]
   },
   {
-   "code": "GGN-119",
+   "code": "990119",
    "name": "Shiv Fuel Centre",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sikanderpur",
    "road": "Gurugram–Faridabad Road",
    "address": "Sikanderpur, Gurugram–Faridabad Road",
-   "lng": 77.09171928055758,
-   "lat": 28.458355688310238,
+   "lng": 77.10317353884687,
+   "lat": 28.472121666120866,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -7506,16 +7521,17 @@
    ]
   },
   {
-   "code": "GGN-120",
+   "code": "990120",
    "name": "Balaji Petroleum",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Gwal Pahari",
    "road": "Gurugram–Faridabad Road",
    "address": "Gwal Pahari, Gurugram–Faridabad Road",
-   "lng": 77.13225844187868,
-   "lat": 28.434747415759198,
+   "lng": 77.12654669624489,
+   "lat": 28.439423767130293,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -7887,16 +7903,17 @@
    ]
   },
   {
-   "code": "GGN-121",
+   "code": "990121",
    "name": "Cyber Fuel Centre",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Bandhwari",
    "road": "Gurugram–Faridabad Road",
    "address": "Bandhwari, Gurugram–Faridabad Road",
-   "lng": 77.18810263470813,
-   "lat": 28.420915798485847,
+   "lng": 77.1757472518714,
+   "lat": 28.4046822183635,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -8215,16 +8232,17 @@
    ]
   },
   {
-   "code": "GGN-122",
+   "code": "990122",
    "name": "Kesar Petroleum",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Mangar",
    "road": "Gurugram–Faridabad Road",
    "address": "Mangar, Gurugram–Faridabad Road",
-   "lng": 77.23766433612106,
-   "lat": 28.413425883691296,
+   "lng": 77.22917752723798,
+   "lat": 28.412602677006564,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -8557,16 +8575,17 @@
    ]
   },
   {
-   "code": "GGN-123",
+   "code": "990123",
    "name": "Balaji Auto Fuels",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Basai",
    "road": "Pataudi Road",
    "address": "Basai, Pataudi Road",
-   "lng": 76.96723883752341,
-   "lat": 28.4496016254227,
+   "lng": 76.96584438818641,
+   "lat": 28.433142547517164,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -8885,16 +8904,17 @@
    ]
   },
   {
-   "code": "GGN-124",
+   "code": "990124",
    "name": "Sunrise Service Station",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Garhi Harsaru",
    "road": "Pataudi Road",
    "address": "Garhi Harsaru, Pataudi Road",
-   "lng": 76.92519487388326,
-   "lat": 28.43136032187309,
+   "lng": 76.91298211281165,
+   "lat": 28.420046116077955,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -9213,16 +9233,17 @@
    ]
   },
   {
-   "code": "GGN-125",
+   "code": "990125",
    "name": "Royal Auto Fuels",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Sultanpur",
    "road": "Pataudi Road",
    "address": "Sultanpur, Pataudi Road",
-   "lng": 76.87602069474495,
-   "lat": 28.400849534171282,
+   "lng": 76.85214018345596,
+   "lat": 28.387768087010542,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -9541,16 +9562,17 @@
    ]
   },
   {
-   "code": "GGN-126",
+   "code": "990126",
    "name": "Maa Kisan Seva Kendra",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "CODO",
    "ksk": true,
    "locality": "Jamalpur",
    "road": "Pataudi Road",
    "address": "Jamalpur, Pataudi Road",
-   "lng": 76.8458915454265,
-   "lat": 28.37711063421465,
+   "lng": 76.81122863168554,
+   "lat": 28.36415207864845,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -9855,16 +9877,17 @@
    ]
   },
   {
-   "code": "GGN-127",
+   "code": "990127",
    "name": "Gurukul Auto Fuels",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Pataudi",
    "road": "Pataudi Road",
    "address": "Pataudi, Pataudi Road",
-   "lng": 76.79567861818992,
-   "lat": 28.331729833508916,
+   "lng": 76.76932935654608,
+   "lat": 28.312586495019463,
    "automated": true,
    "automation_online": false,
    "dealer": {
@@ -10169,16 +10192,17 @@
    ]
   },
   {
-   "code": "GGN-128",
+   "code": "990128",
    "name": "Kanha Filling Station",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sector 37D",
    "road": "Dwarka Expressway",
    "address": "Sector 37D, Dwarka Expressway",
-   "lng": 77.01382872569303,
-   "lat": 28.48201663905749,
+   "lng": 76.9989878844762,
+   "lat": 28.492835371463155,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -10564,16 +10588,17 @@
    ]
   },
   {
-   "code": "GGN-129",
+   "code": "990129",
    "name": "Sai Fuel Centre",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sector 99",
    "road": "Dwarka Expressway",
    "address": "Sector 99, Dwarka Expressway",
-   "lng": 77.01819948210645,
-   "lat": 28.502107901246763,
+   "lng": 77.01360284079058,
+   "lat": 28.507749770185924,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -10959,16 +10984,17 @@
    ]
   },
   {
-   "code": "GGN-130",
+   "code": "990130",
    "name": "Shyam Fuel Point",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Sector 106",
    "road": "Dwarka Expressway",
    "address": "Sector 106, Dwarka Expressway",
-   "lng": 77.02590932827063,
-   "lat": 28.52404082616674,
+   "lng": 77.02993470102118,
+   "lat": 28.5258953862555,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -11354,16 +11380,17 @@
    ]
   },
   {
-   "code": "GGN-131",
+   "code": "990131",
    "name": "Sai Filling Station",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Bajghera",
    "road": "Dwarka Expressway",
    "address": "Bajghera, Dwarka Expressway",
-   "lng": 77.03319207894299,
-   "lat": 28.54531219040335,
+   "lng": 77.03884857623542,
+   "lat": 28.54116082883897,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -11682,16 +11709,17 @@
    ]
   },
   {
-   "code": "GGN-132",
+   "code": "990132",
    "name": "Maa Service Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "DLF Phase 2",
    "road": "City",
    "address": "DLF Phase 2, Gurugram",
-   "lng": 77.04758014497145,
-   "lat": 28.44749898439987,
+   "lng": 77.04693860961534,
+   "lat": 28.446972656324007,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -12063,16 +12091,17 @@
    ]
   },
   {
-   "code": "GGN-133",
+   "code": "990133",
    "name": "Shyam Filling Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sector 14",
    "road": "City",
    "address": "Sector 14, Gurugram",
-   "lng": 77.01985170961943,
-   "lat": 28.46762012872211,
+   "lng": 77.02043743195276,
+   "lat": 28.467827553153946,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -12430,16 +12459,17 @@
    ]
   },
   {
-   "code": "GGN-134",
+   "code": "990134",
    "name": "Cyber Petroleum",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sector 29",
    "road": "City",
    "address": "Sector 29, Gurugram",
-   "lng": 77.01745511751263,
-   "lat": 28.47771822403504,
+   "lng": 77.0171595307553,
+   "lat": 28.477605496132114,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -12825,16 +12855,17 @@
    ]
   },
   {
-   "code": "GGN-135",
+   "code": "990135",
    "name": "Jai Filling Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Udyog Vihar",
    "road": "City",
    "address": "Udyog Vihar, Gurugram",
-   "lng": 77.06755454375748,
-   "lat": 28.44717553835608,
+   "lng": 77.06975,
+   "lat": 28.44997,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -13234,16 +13265,17 @@
    ]
   },
   {
-   "code": "GGN-136",
+   "code": "990136",
    "name": "Om Service Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Palam Vihar",
    "road": "City",
    "address": "Palam Vihar, Gurugram",
-   "lng": 77.02056067004499,
-   "lat": 28.464983035104417,
+   "lng": 77.01986409317178,
+   "lat": 28.465284689352725,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -13576,16 +13608,17 @@
    ]
   },
   {
-   "code": "GGN-137",
+   "code": "990137",
    "name": "Sunrise Fuels",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "South City",
    "road": "City",
    "address": "South City, Gurugram",
-   "lng": 77.00374133617649,
-   "lat": 28.45486479040269,
+   "lng": 77.0042195270737,
+   "lat": 28.455123532751863,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -13957,16 +13990,17 @@
    ]
   },
   {
-   "code": "GGN-138",
+   "code": "990138",
    "name": "Krishna Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sector 56",
    "road": "City",
    "address": "Sector 56, Gurugram",
-   "lng": 77.0590455360883,
-   "lat": 28.46496750616305,
+   "lng": 77.06044568171161,
+   "lat": 28.46640436315545,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -14299,16 +14333,17 @@
    ]
   },
   {
-   "code": "GGN-139",
+   "code": "990139",
    "name": "Maa Filling Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sushant Lok",
    "road": "City",
    "address": "Sushant Lok, Gurugram",
-   "lng": 77.01533591446446,
-   "lat": 28.45894756518376,
+   "lng": 77.01669816573471,
+   "lat": 28.458257726647723,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -14669,16 +14704,17 @@
    ]
   },
   {
-   "code": "GGN-140",
+   "code": "990140",
    "name": "Ganpati Service Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Sector 45",
    "road": "City",
    "address": "Sector 45, Gurugram",
-   "lng": 77.03340002136422,
-   "lat": 28.46028594918649,
+   "lng": 77.03333378966154,
+   "lat": 28.46023811042587,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -15005,16 +15041,17 @@
    ]
   },
   {
-   "code": "GGN-141",
+   "code": "990141",
    "name": "Balaji Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "New Railway Road",
    "road": "City",
    "address": "New Railway Road, Gurugram",
-   "lng": 77.03186928203336,
-   "lat": 28.478103695135292,
+   "lng": 77.0321795342949,
+   "lat": 28.47883615241258,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -15386,16 +15423,17 @@
    ]
   },
   {
-   "code": "GGN-142",
+   "code": "990142",
    "name": "Kanha Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Sector 10A",
    "road": "City",
    "address": "Sector 10A, Gurugram",
-   "lng": 77.02128008659678,
-   "lat": 28.476709906709292,
+   "lng": 77.02060786817015,
+   "lat": 28.477062979622204,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -15767,16 +15805,17 @@
    ]
   },
   {
-   "code": "GGN-143",
+   "code": "990143",
    "name": "Millennium Fuel Centre",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sector 31",
    "road": "City",
    "address": "Sector 31, Gurugram",
-   "lng": 77.07605979423407,
-   "lat": 28.46297945129822,
+   "lng": 77.07384656658601,
+   "lat": 28.4627845821894,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -16109,16 +16148,17 @@
    ]
   },
   {
-   "code": "GGN-144",
+   "code": "990144",
    "name": "Hanuman Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "MG Road",
    "road": "City",
    "address": "MG Road, Gurugram",
-   "lng": 77.03800014717648,
-   "lat": 28.43932845275842,
+   "lng": 77.0400705605314,
+   "lat": 28.44145595892097,
    "automated": true,
    "automation_online": true,
    "dealer": {

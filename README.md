@@ -91,7 +91,7 @@ On macOS you can instead double-click [`poc/start.command`](poc/start.command). 
 
 | Link | Opens |
 | --- | --- |
-| `/#outlet=GGN-104` | An outlet directly. Add `&tab=sales`, `supply`, `cameras`, `compliance` or `dealer` |
+| `/#outlet=990104` | An outlet directly. Add `&tab=sales`, `supply`, `cameras`, `compliance` or `dealer` |
 | `/#view=surveillance` | A view: `ops`, `outlets`, `logistics`, `surveillance`, `compliance`, `analytics`, `copilot` |
 | `/#base=sat` | Start in satellite view (combine with others, e.g. `/#view=ops&base=sat`) |
 
@@ -122,8 +122,9 @@ Open `/#tour&auto` to start in auto-play. There are 21 steps, taking about 8–1
 The landing view flies in from all of India to the sales area. It's designed to be readable at a glance by someone seeing it for the first time.
 
 - **Map:** a neutral dark map of the area that switches to **satellite** automatically when you zoom into an outlet. You can also pick either one yourself, and tilt the map in **3D**.
-- **On the map:** 44 outlets coloured by status (running normally, needs attention, urgent, offline), 2 supply points, 14 tank trucks moving along their delivery routes, and the sales-area boundary.
-- **Layers** (top-right button): competitor outlets, a sales heatmap and 3D volume columns.
+- **On the map:** 44 outlets coloured by status (running normally, needs attention, urgent, offline), 2 supply points, 14 tank trucks driving their delivery routes over the real road network, and the sales-area boundary.
+- **Trucks follow real roads.** Each route is the fastest way a loaded tanker can drive from the supply point to the outlet over the area's main roads (OpenStreetMap, motorway to tertiary, one-way roads respected). Arrival times come from that drive. Select a truck to see the road still ahead, the road already driven, the roads it uses ("via NH-48") and a ±250 m geofence corridor. The truck stopped off route is shown on the actual side road it turned into.
+- **Layers** (top-right button): competitor outlets, the truck road network, a sales heatmap and 3D volume columns.
 - **Left panel:** four headline numbers (sold today, this month against target, outlets needing attention, trucks on the road), then three tabs:
   - **Priorities:** urgent items in plain English, each with a one-click action such as *Send a truck now* or *Contact driver*.
   - **All alerts:** every alert, filterable by category.
@@ -206,6 +207,8 @@ The synthetic data includes scripted storylines so a demo always has something r
 Plain HTML, CSS and JavaScript, loaded as ordinary scripts. There is no framework, bundler or server code.
 
 ```
+roadnet.js + roads.js  (road graph and A* routing; data.js uses them to place outlets and plan routes)
+        │
 data.js  ──►  sim.js  ──►  map.js / ui.js / cctv.js / charts.js
 (seeded       (1-second tick:          (render the map, panels,
  synthetic     sales accrue, tanks      views and camera feeds;
@@ -267,7 +270,7 @@ petroleum-dashboard/
 │   ├── src/prahari/
 │   └── tests/
 ├── deploy/                       ← Docker Compose stack (database, API, feed, web server)
-├── tools/                        ← helper scripts
+├── tools/                        ← helper scripts (export the world for the backend, rebuild the road network)
 ├── Makefile                      ← make up / check / demo-data …
 ├── CLAUDE.md                     ← working agreement for AI agents (incl. the code-review agent)
 └── docs/
@@ -293,7 +296,7 @@ petroleum-dashboard/
 
 ## 9. Limitations & disclaimer
 
-- **All data is synthetic.** Outlet names, dealers, phone numbers, vehicle plates, volumes and events are generated. Any resemblance to real outlets or people is coincidental. Map positions are approximate and don't correspond to real fuel stations.
+- **All data is synthetic.** Outlet names, dealers, phone numbers, vehicle plates, volumes and events are generated. Any resemblance to real outlets or people is coincidental. Outlets are placed on real roads, but their positions don't correspond to real fuel stations.
 - **Not affiliated with any oil company.** "OMC" is used generically and no company branding is used.
 - **CCTV feeds are drawn procedurally.** No real video is used.
 - **The copilot is rule-based**, not an LLM.
@@ -304,6 +307,7 @@ petroleum-dashboard/
 
 - **[MapLibre GL JS](https://maplibre.org/) 4.7.1:** map rendering (open source, BSD-3; bundled in `poc/vendor/` with its licence)
 - **Esri World Imagery and reference layers:** satellite basemap, roads and labels (© Esri, Maxar, Earthstar Geographics and contributors)
+- **Road network:** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License (ODbL). `poc/js/roadnet.js` is generated from it by `node tools/build_roadnet.mjs` (downloads the area's main roads from the Overpass API); rerun it to refresh the roads.
 - **Google Fonts:** Inter and JetBrains Mono
 - Everything else (simulation, CCTV renderer, charts, UI) is hand-written vanilla JavaScript.
 

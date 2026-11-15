@@ -79,10 +79,11 @@ class LicenceOut(BaseModel):
 
 
 class OutletSummary(BaseModel):
-    code: str
-    sap_code: str
+    code: str  # 6-digit RO code
+    sap_code: str | None
     name: str
-    category: str
+    market_class: str  # A-Urban … E-Rural
+    category: str  # Highway | Urban | Rural, derived from market_class
     lat: float
     lng: float
     is_automated: bool
@@ -147,7 +148,8 @@ class ImportJobOut(_Out):
 class AreaOut(BaseModel):
     code: str
     name: str
-    division: str | None
+    divisional_office: str | None
+    state_office: str | None
     boundary: list[list[float]] | None
     depots: list[dict[str, Any]]
     business_date: date

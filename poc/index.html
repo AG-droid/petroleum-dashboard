@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prahari · Gurugram Sales Area</title>
+<title>Prahari · Gurugram Retail Sales Area</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
       <span class="brand-name">Prahari</span>
     </div>
     <div class="tb-divider"></div>
-    <button class="area-select" id="areaSelect" title="Switch sales area">Gurugram Sales Area <span class="faint">· Haryana</span>
+    <button class="area-select" id="areaSelect" title="Retail Sales Area · Gurugram Divisional Office · Haryana State Office">Gurugram Retail Sales Area <span class="faint">· Haryana</span>
       <svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--text-3)"><path d="m6 9 6 6 6-6"/></svg></button>
     <button id="searchBtn" class="search">
       <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -62,6 +62,7 @@
           <label>Retail outlets<span class="toggle"><input type="checkbox" data-layer="outlets" checked><span></span></span></label>
           <label>Tank trucks<span class="toggle"><input type="checkbox" data-layer="tankers" checked><span></span></span></label>
           <label>Delivery routes<span class="toggle"><input type="checkbox" data-layer="routes" checked><span></span></span></label>
+          <label>Truck road network<span class="toggle"><input type="checkbox" data-layer="roadnet"><span></span></span></label>
           <label>Terminals &amp; depots<span class="toggle"><input type="checkbox" data-layer="depots" checked><span></span></span></label>
           <label>Sales area boundary<span class="toggle"><input type="checkbox" data-layer="area" checked><span></span></span></label>
           <label>Competitor outlets<span class="toggle"><input type="checkbox" data-layer="competitors"><span></span></span></label>
@@ -97,6 +98,8 @@
 <div id="tooltip"></div>
 
 <script src="vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
+<script src="js/roadnet.js"></script>
+<script src="js/roads.js"></script>
 <script src="js/data.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/charts.js"></script>

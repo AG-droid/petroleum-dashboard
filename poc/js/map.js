@@ -5,6 +5,7 @@
   'use strict';
   const { outlets, depots, tankers, competitors, area, PRODUCTS } = DB;
   const MV = { map: null, outletMk: {}, tankerMk: {}, depotMk: {}, layers: {}, selected: null, selTanker: null, ready: false, base: 'dark', userBase: null, onBasemap: null };
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const TRUCK_SVG = '<svg viewBox="0 0 24 24"><path d="M1 6h13v9H1zM14 9h4.5l3.5 3.5V15h-8zM5.5 19a2 2 0 100-4 2 2 0 000 4zM17.5 19a2 2 0 100-4 2 2 0 000 4z"/></svg>';
   const STATUS_HEX = { ok: '#57b583', warn: '#e0a645', crit: '#e5604f', off: '#7c8188' };
   const STATUS_TXT = { ok: 'Running normally', warn: 'Needs attention', crit: 'Urgent', off: 'Offline' };
@@ -60,9 +61,19 @@
       // Dark casing under a light line keeps the edge readable on imagery
       map.addLayer({ id: 'area-casing', type: 'line', source: 'area', layout: { 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-width': 4, 'line-opacity': 0.45, 'line-blur': 1 } });
       map.addLayer({ id: 'area-line', type: 'line', source: 'area', layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 1.4, 'line-dasharray': [4, 3], 'line-opacity': 0.55 } });
-      map.addSource('routes', { type: 'geojson', data: routesGeo() });
-      map.addLayer({ id: 'routes-line', type: 'line', source: 'routes', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
-        'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'sel'], 2.4, 1.2], 'line-opacity': ['case', ['get', 'sel'], 0.95, 0.45], 'line-dasharray': [2, 2] } });
+      // Geofence corridor around the selected truck's planned route: ±250 m on the ground at any zoom.
+      map.addSource('corridor', { type: 'geojson', data: corridorGeo() });
+      map.addLayer({ id: 'corridor', type: 'line', source: 'corridor', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
+        'line-color': '#7aa7ff', 'line-opacity': 0.13, 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 8, metresToPx(500, 8), 18, metresToPx(500, 18)] } });
+      // Routes, outlet positions and the corridor all derive from OpenStreetMap roads: credit it here,
+      // on a source that is always shown (the satellite basemap's own credit doesn't mention OSM).
+      map.addSource('routes', { type: 'geojson', data: routesGeo(), attribution: window.RoadNet && RoadNet.ok ? 'Routes © OpenStreetMap contributors (ODbL)' : undefined });
+      map.addLayer({ id: 'routes-line', type: 'line', source: 'routes', filter: ['!=', ['get', 'kind'], 'detour'], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
+        'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'sel'], 2.6, 1.3],
+        'line-opacity': ['case', ['==', ['get', 'kind'], 'done'], 0.28, ['get', 'sel'], 0.95, 0.5], 'line-dasharray': [2, 2] } });
+      // Where an off-route truck actually went: solid red along the real side road.
+      map.addLayer({ id: 'routes-detour', type: 'line', source: 'routes', filter: ['==', ['get', 'kind'], 'detour'], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
+        'line-color': '#e5604f', 'line-width': ['case', ['get', 'sel'], 3.2, 2.2], 'line-opacity': 0.9 } });
       map.addSource('comp', { type: 'geojson', data: { type: 'FeatureCollection', features: competitors.map((c) => ({ type: 'Feature', properties: { brand: c.brand, est: c.estDaily, isNew: !!c.isNew }, geometry: { type: 'Point', coordinates: [c.lng, c.lat] } })) } });
       map.addLayer({ id: 'comp-dot', type: 'circle', source: 'comp', layout: { visibility: 'none' }, paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3, 14, 6], 'circle-color': ['match', ['get', 'brand'], 'Brand B', '#b48ead', 'Brand C', '#d08770', '#8f959c'],
@@ -152,14 +163,50 @@
       <div class="tt-row"><span>Status</span><span>${t.status}</span></div>
       <div class="tt-row"><span>Going to</span><span>${o.name.length > 22 ? o.name.slice(0, 21) + '…' : o.name}</span></div>
       <div class="tt-row"><span>Carrying</span><span>${t.comps.map((c) => c.kl + ' kL ' + PRODUCTS[c.product].name.toLowerCase()).join(', ')}</span></div>
-      ${eta ? `<div class="tt-row"><span>Arrives in</span><span>${eta} min</span></div>` : ''}`;
+      ${eta ? `<div class="tt-row"><span>Arrives in</span><span>${eta} min</span></div>` : ''}
+      ${t.route.via && t.route.via[0] ? `<div class="tt-row"><span>Via</span><span>${esc(t.route.via[0].length > 26 ? t.route.via[0].slice(0, 25) + '…' : t.route.via[0])}</span></div>` : ''}`;
   }
 
+  // The roads trucks can use (OpenStreetMap, motorway to tertiary). Built on first use: it is
+  // 20,000 lines and off by default. Drawn under the delivery routes.
+  function addRoadNetLayer() {
+    if (!(window.RoadNet && RoadNet.ok)) return;
+    const map = MV.map;
+    map.addSource('roadnet', { type: 'geojson', data: RoadNet.geojson() });
+    map.addLayer({ id: 'roadnet', type: 'line', source: 'roadnet', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
+      'line-color': ['match', ['get', 'cls'], 0, '#7aa7ff', 1, '#7aa7ff', 2, '#9fb6d6', '#5d6773'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 9, ['match', ['get', 'cls'], 0, 1.6, 1, 1.6, 2, 1.1, 0.5], 14, ['match', ['get', 'cls'], 0, 4, 1, 4, 2, 3, 1.5]],
+      'line-opacity': 0.55 } }, 'corridor');
+  }
+
+  // Pixels a ground distance covers at a zoom level, at the sales area's latitude (for MapLibre's
+  // exponential zoom interpolation, which then keeps the width true on the ground in between).
+  function metresToPx(m, zoom) { return m / (156543.03 * Math.cos(28.4 * Math.PI / 180) / Math.pow(2, zoom)); }
+
+  /**
+   * Each truck's line splits at the truck: the road still ahead (dashed), and, for the selected
+   * truck, the part already driven (faint). A truck heading back to its depot shows the way back.
+   */
   function routesGeo() {
-    return { type: 'FeatureCollection', features: tankers.filter((t) => ['In transit', 'Halted', 'Returning'].includes(t.status)).map((t) => ({
-      type: 'Feature', properties: { id: t.id, sel: MV.selTanker === t.id, color: t.status === 'Halted' ? '#e5604f' : t.status === 'Returning' ? '#6e737a' : '#ffffff' },
-      geometry: { type: 'LineString', coordinates: t.route.pts },
-    })) };
+    const features = [];
+    const line = (props, coords) => { if (coords.length > 1) features.push({ type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords } }); };
+    tankers.filter((t) => ['In transit', 'Halted', 'Returning'].includes(t.status)).forEach((t) => {
+      const sel = MV.selTanker === t.id;
+      const at = DB.util.pointAt(t.route, t.progress), here = [at.lng, at.lat], pts = t.route.pts;
+      const driven = pts.slice(0, at.seg + 1).concat([here]), ahead = [here].concat(pts.slice(at.seg + 1));
+      const color = t.status === 'Halted' ? '#e5604f' : t.status === 'Returning' ? '#6e737a' : '#ffffff';
+      if (t.status === 'Returning') line({ id: t.id, sel, color, kind: 'ahead' }, driven.slice().reverse());
+      else {
+        line({ id: t.id, sel, color, kind: 'ahead' }, ahead);
+        if (sel) line({ id: t.id, sel, color: '#ffffff', kind: 'done' }, driven);
+      }
+      if (t.detour) line({ id: t.id, sel, color: '#e5604f', kind: 'detour' }, t.detour.pts);
+    });
+    return { type: 'FeatureCollection', features };
+  }
+  function corridorGeo() {
+    const t = MV.selTanker && tankers.find((x) => x.id === MV.selTanker);
+    return { type: 'FeatureCollection', features: t && t.status !== 'Loading' ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: t.route.pts } }] : [] };
   }
   function columnsGeo() {
     return { type: 'FeatureCollection', features: outlets.map((o) => {
@@ -186,6 +233,11 @@
     });
     const src = MV.map.getSource('routes');
     if (src) src.setData(routesGeo());
+    const cor = MV.map.getSource('corridor');
+    // Redraw only when the selection or that truck's route (a new trip) changes.
+    const selT = MV.selTanker && tankers.find((x) => x.id === MV.selTanker);
+    const corKey = selT ? selT.id + '|' + (selT.status === 'Loading') : null;
+    if (cor && (cor._for !== corKey || cor._route !== (selT && selT.route))) { cor._for = corKey; cor._route = selT && selT.route; cor.setData(corridorGeo()); }
     if (Sim.t % 5 === 0) { const c = MV.map.getSource('cols'); if (c) c.setData(columnsGeo()); }
   };
 
@@ -196,7 +248,11 @@
     if (name === 'outlets') show(MV.outletMk);
     if (name === 'tankers') show(MV.tankerMk);
     if (name === 'depots') show(MV.depotMk);
-    if (name === 'routes') map.setLayoutProperty('routes-line', 'visibility', vis);
+    if (name === 'routes') ['routes-line', 'routes-detour', 'corridor'].forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
+    if (name === 'roadnet') {
+      if (on && !map.getLayer('roadnet')) addRoadNetLayer();
+      if (map.getLayer('roadnet')) map.setLayoutProperty('roadnet', 'visibility', vis);
+    }
     if (name === 'area') ['area-mask', 'area-fill', 'area-casing', 'area-line'].forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
     if (name === 'competitors') map.setLayoutProperty('comp-dot', 'visibility', vis);
     if (name === 'heat') map.setLayoutProperty('heat', 'visibility', vis);

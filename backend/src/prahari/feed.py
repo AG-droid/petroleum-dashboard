@@ -44,7 +44,7 @@ def build_batch(state: dict[str, Any], at: datetime, tz: ZoneInfo) -> dict[str, 
     for site in state["sites"]:
         if not (site["automated"] and site["online"]):
             continue
-        rng = random.Random(site["sap_code"])  # per-site constant jitter: busier or quieter than average
+        rng = random.Random(site["ro_code"])  # per-site constant jitter: busier or quieter than average
         sold = {p: litres * frac * rng.uniform(0.92, 1.08) for p, litres in site["daily_l"].items()}
         tanks = []
         for t in site["tanks"]:
@@ -73,7 +73,7 @@ def build_batch(state: dict[str, Any], at: datetime, tz: ZoneInfo) -> dict[str, 
                 }
             )
         snapshots.append(
-            {"site_id": site["sap_code"], "observed_at": at.isoformat(), "tanks": tanks, "nozzles": nozzles}
+            {"site_id": site["ro_code"], "observed_at": at.isoformat(), "tanks": tanks, "nozzles": nozzles}
         )
     return {"snapshots": snapshots}
 

@@ -44,7 +44,7 @@ An internet connection is needed for the map and satellite images and the fonts.
 
 ## Deep links (handy for demos)
 
-- `http://localhost:8080/#outlet=GGN-104`: open an outlet directly (add `&tab=cameras|sales|supply|compliance|dealer`)
+- `http://localhost:8080/#outlet=990104`: open an outlet directly (add `&tab=cameras|sales|supply|compliance|dealer`)
 - `http://localhost:8080/#view=surveillance`: open a view (`outlets`, `logistics`, `surveillance`, `compliance`, `analytics`, `copilot`)
 
 ## Code layout

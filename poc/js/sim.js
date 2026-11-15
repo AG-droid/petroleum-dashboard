@@ -25,9 +25,11 @@
   }
   function enRouteTanker(o) { return tankers.find((t) => t.outletId === o.id && ACTIVE.includes(t.status)); }
   function etaMin(t) {
-    if (t.status === 'Loading') return Math.round(t.route.km / 32 * 60 + 25);
+    // Road routes carry a driving time at truck speeds; straight-line fallbacks assume 32 km/h.
+    const tripMin = t.route.min || t.route.km / 32 * 60;
+    if (t.status === 'Loading') return Math.round(tripMin + 25);
     if (t.status === 'Halted') return null;
-    return Math.max(1, Math.round((1 - t.progress) * t.route.km / 32 * 60));
+    return Math.max(1, Math.round((1 - t.progress) * tripMin));
   }
   function daysTo(ts) { return Math.ceil((ts - Date.now()) / util.DAY); }
 
@@ -153,7 +155,7 @@
       rule(t.status === 'Halted', 'halt:' + t.id, {
         sev: 'critical', cat: 'Security', outletId: o.id, tankerId: t.id,
         title: `Truck ${t.plate} stopped off route for ${Math.round(t.haltSec / 60)} min`,
-        detail: `${(Math.hypot(t.offset ? t.offset[0] : 0, t.offset ? t.offset[1] : 0) * 105).toFixed(1)} km off planned route to ${o.name}. Seals ${t.seals.join(', ')} unverified. Driver ${t.driver}.`,
+        detail: `${offRouteKm(t).toFixed(1)} km off planned route to ${o.name}. Seals ${t.seals.join(', ')} unverified. Driver ${t.driver}.`,
       });
     });
     // expire transient alerts
@@ -286,14 +288,21 @@
       }
     });
   }
+  /** How far a halted truck is from its planned route (km). */
+  function offRouteKm(t) {
+    if (t.detour) return t.detour.offKm;
+    return t.offset ? Math.hypot(t.offset[0], t.offset[1]) * 105 : 0;
+  }
   function tankerPos(t) {
     const p = util.pointAt(t.route, t.progress);
     if (t.status === 'Loading') { const d = DB.depotById(t.depotId); return { lng: d.lng, lat: d.lat, bearing: 0 }; }
+    if (t.detour) { const e = t.detour.pts[t.detour.pts.length - 1]; return { lng: e[0], lat: e[1], bearing: p.bearing, seg: p.seg }; }
     if (t.offset) { p.lng += t.offset[0]; p.lat += t.offset[1]; }
     if (t.status === 'Returning') p.bearing += 180;
     return p;
   }
   Sim.tankerPos = tankerPos;
+  Sim.offRouteKm = offRouteKm;
   Sim.etaMin = etaMin;
   Sim.compute = compute;
   Sim.daysTo = daysTo;
@@ -346,7 +355,7 @@
       return t;
     },
     contactDriver(t) {
-      t.status = 'In transit'; t.offset = null; t.haltSec = 0;
+      t.status = 'In transit'; t.offset = null; t.detour = null; t.haltSec = 0;
       pushEvent('ok', `Driver of ${t.plate} contacted; back on planned route`, t.outletId);
       evaluate();
     },

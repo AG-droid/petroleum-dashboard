@@ -52,23 +52,34 @@
 
   // ---------- Roads of the Gurugram sales area (approximate) ----------
   const ROADS = [
-    { id: 'nh48', name: 'NH-48 (Delhi–Jaipur)', kind: 'Highway', n: 12,
+    { id: 'nh48', osm: /NH48/, name: 'NH-48 (Delhi–Jaipur)', kind: 'Highway', market: 'D1-Highway', n: 12,
       pts: [[77.100, 28.508], [77.072, 28.472], [77.040, 28.449], [77.012, 28.426], [76.980, 28.400], [76.937, 28.357], [76.870, 28.310], [76.800, 28.212], [76.700, 28.140], [76.590, 28.082]],
       places: ['Sirhaul', 'IFFCO Chowk', 'Rajiv Chowk', 'Hero Honda Chowk', 'Kherki Daula', 'Manesar', 'Bilaspur Chowk', 'Dharuhera', 'Kapriwas', 'Bawal'] },
-    { id: 'sohna', name: 'Sohna Road (NH-248A)', kind: 'Urban', n: 6,
+    { id: 'sohna', osm: /NH248A|Sohna Road/, name: 'Sohna Road (NH-248A)', kind: 'Urban', market: 'B-Urban', n: 6,
       pts: [[77.040, 28.449], [77.041, 28.415], [77.044, 28.384], [77.050, 28.345], [77.060, 28.292], [77.066, 28.250]],
       places: ['Subhash Chowk', 'Badshahpur', 'Vatika Chowk', 'Bhondsi', 'Raisina', 'Sohna'] },
-    { id: 'fbd', name: 'Gurugram–Faridabad Road', kind: 'Urban', n: 4,
+    { id: 'fbd', osm: /Faridabad|MDR137/, name: 'Gurugram–Faridabad Road', kind: 'Urban', market: 'C-Urban', n: 4,
       pts: [[77.080, 28.468], [77.102, 28.452], [77.140, 28.432], [77.200, 28.420], [77.255, 28.410]],
       places: ['Sikanderpur', 'Gwal Pahari', 'Bandhwari', 'Mangar'] },
-    { id: 'pataudi', name: 'Pataudi Road', kind: 'Rural', n: 5,
+    { id: 'pataudi', osm: /NH352W|Pataudi/, name: 'Pataudi Road', kind: 'Rural', market: 'E-Rural', n: 5,
       pts: [[77.000, 28.463], [76.960, 28.448], [76.920, 28.430], [76.860, 28.390], [76.810, 28.345], [76.780, 28.322]],
       places: ['Basai', 'Garhi Harsaru', 'Sultanpur', 'Jamalpur', 'Pataudi'] },
-    { id: 'dwarka', name: 'Dwarka Expressway', kind: 'Urban', n: 4,
+    { id: 'dwarka', osm: /NH248BB|Dwarka Expressway/, name: 'Dwarka Expressway', kind: 'Urban', market: 'B-Urban', n: 4,
       pts: [[77.008, 28.468], [77.018, 28.498], [77.028, 28.528], [77.040, 28.556]],
       places: ['Sector 37D', 'Sector 99', 'Sector 106', 'Bajghera'] },
   ];
+  // With the real road network loaded (js/roads.js), each corridor follows the actual road
+  // between its towns, so outlets placed along it sit on the road rather than in a field.
+  const RN = window.RoadNet && window.RoadNet.ok ? window.RoadNet : null;
+  if (RN) ROADS.forEach((rd) => { const t = RN.through(rd.pts, { name: rd.osm }); if (t) rd.pts = t.pts; });
   ROADS.forEach((rd) => { rd.info = pathInfo(rd.pts); });
+  // Snap a synthetic location onto the nearest road (petrol pumps and depot gates face a road).
+  // classes: 0 motorway, 1 trunk, 2 primary, 3 secondary, 4 tertiary.
+  function onRoad(lng, lat, classes) {
+    const s = RN && RN.snap([lng, lat], classes ? { classes } : null);
+    return s ? [s.lng, s.lat] : [lng, lat];
+  }
+  const lngLat = (a) => ({ lng: a[0], lat: a[1] });
   const CITY_CENTER = [77.045, 28.458];
   const CITY_PLACES = ['DLF Phase 2', 'Sector 14', 'Sector 29', 'Udyog Vihar', 'Palam Vihar', 'South City', 'Sector 56', 'Sushant Lok', 'Sector 45', 'New Railway Road', 'Sector 10A', 'Sector 31', 'MG Road'];
 
@@ -107,10 +118,14 @@
 
   // ---------- Outlets ----------
   const outlets = [];
+  // RO codes: 6 digits, as in the oil companies' systems. The demo uses the 9901xx range, kept
+  // apart from real outlet codes so a synthetic alert can never point at a real outlet.
   let seq = 101;
   function makeOutlet(lng, lat, category, roadIdx, roadT, locality, roadName) {
     const ksk = category === 'Rural' && chance(0.4);
-    const id = 'GGN-' + (seq++);
+    const id = String(990000 + seq++);
+    // Class of market (A/B/C-Urban, D1/D2-Highway, E-Rural); city-centre outlets are A-Urban.
+    const marketClass = roadIdx == null ? 'A-Urban' : ROADS[roadIdx].market;
     const daily = category === 'Highway' ? r(9, 22) : category === 'Urban' ? r(5, 13) : r(2, 5);
     const hsdShare = category === 'Highway' ? r(0.6, 0.75) : category === 'Urban' ? r(0.3, 0.45) : r(0.55, 0.7);
     const hasXP = category === 'Urban' ? chance(0.65) : category === 'Highway' ? chance(0.35) : false;
@@ -183,7 +198,7 @@
 
     const creditLimit = ri(5, 40) * 100000;
     const o = {
-      id, name: outletName(ksk), category, ksk, lng, lat, roadIdx, roadT, locality,
+      id, name: outletName(ksk), category, marketClass, ksk, lng, lat, roadIdx, roadT, locality,
       road: roadName || 'City', address: locality + ', ' + (roadName || 'Gurugram'),
       type: category === 'Rural' ? (chance(0.7) ? 'DODO' : 'CODO') : pick(['DODO', 'DODO', 'CODO', 'CODO', 'COCO']),
       automated: chance(0.86), raOnline: true,
@@ -219,14 +234,17 @@
       let t = (i + 0.5) / rd.n + r(-0.035, 0.035);
       t = Math.max(0.03, Math.min(0.98, t));
       const p = pointAt(rd.info, t);
-      const lng = p.lng + r(-0.0025, 0.0025), lat = p.lat + r(-0.0025, 0.0025);
+      // The random jitter is drawn either way so every later random value stays the same.
+      const jx = r(-0.0025, 0.0025), jy = r(-0.0025, 0.0025);
+      const [lng, lat] = RN ? [p.lng, p.lat] : [p.lng + jx, p.lat + jy];
       const place = rd.places[Math.min(rd.places.length - 1, Math.floor(t * rd.places.length))];
       makeOutlet(lng, lat, rd.kind, idx, t, place, rd.name);
     }
   });
   for (let i = 0; i < 13; i++) {
     const ang = r(0, Math.PI * 2), rad = r(0.008, 0.038);
-    makeOutlet(CITY_CENTER[0] + Math.cos(ang) * rad * 1.15, CITY_CENTER[1] + Math.sin(ang) * rad, 'Urban', null, null, CITY_PLACES[i % CITY_PLACES.length], null);
+    const [lng, lat] = onRoad(CITY_CENTER[0] + Math.cos(ang) * rad * 1.15, CITY_CENTER[1] + Math.sin(ang) * rad, [2, 3, 4]);
+    makeOutlet(lng, lat, 'Urban', null, null, CITY_PLACES[i % CITY_PLACES.length], null);
   }
 
   // ---------- Scripted storylines (make the demo tell a story) ----------
@@ -270,13 +288,24 @@
     { id: 'DEP-BJW', name: 'Bijwasan Terminal', short: 'BIJWASAN TML', lng: 77.052, lat: 28.548, capacityKL: 98000 },
     { id: 'DEP-RWR', name: 'Rewari Depot', short: 'REWARI DEPOT', lng: 76.628, lat: 28.178, capacityKL: 42000 },
   ];
+  depots.forEach((d) => { [d.lng, d.lat] = onRoad(d.lng, d.lat); });
   function nearestDepot(o) {
     let best = depots[0], bd = Infinity;
     depots.forEach((d) => { const k = haversineKm([d.lng, d.lat], [o.lng, o.lat]); if (k < bd) { bd = k; best = d; } });
     return best;
   }
+  const routeCache = new Map();
   function buildRoute(depot, o) {
     const start = [depot.lng, depot.lat], end = [o.lng, o.lat];
+    if (RN) {
+      const key = depot.id + '>' + o.id;
+      if (!routeCache.has(key)) {
+        const rt = RN.route(start, end);
+        // min: driving time at truck speeds; via: the main roads used, longest first
+        routeCache.set(key, rt && Object.assign(pathInfo(rt.pts), { min: rt.min, via: rt.via }));
+      }
+      if (routeCache.get(key)) return routeCache.get(key);
+    }
     let pts;
     if (o.roadIdx == null) {
       const mid = [(start[0] + end[0]) / 2 + 0.008, (start[1] + end[1]) / 2 - 0.004];
@@ -320,6 +349,12 @@
   const tc = makeTanker(S.covered, 'In transit'); tc.progress = 0.55; tc.comps = [{ product: 'MS', kl: 12 }, { product: 'HSD', kl: 8 }];
   // Halted, off-route tanker (security story)
   const th = makeTanker(outlets[6], 'Halted'); th.progress = 0.42; th.haltSec = 47 * 60; th.offset = [0.0085, -0.006];
+  // With real roads, the truck has turned off onto an actual side road instead of floating 1 km away.
+  if (RN) {
+    const at = pointAt(th.route, th.progress);
+    th.detour = RN.detour(th.route.pts, [at.lng, at.lat], 1.0);
+    if (th.detour) th.offset = null;
+  }
   for (let i = 0; i < 9; i++) { const t = makeTanker(pick(destPool), 'In transit'); t.progress = r(0.05, 0.9); }
   for (let i = 0; i < 2; i++) { const t = makeTanker(pick(destPool), 'Loading'); t.timer = ri(8, 30); }
   const tu = makeTanker(pick(destPool), 'Unloading'); tu.progress = 1; tu.timer = 25;
@@ -330,15 +365,15 @@
     const n = Math.max(2, Math.round(rd.n * 0.55));
     for (let i = 0; i < n; i++) {
       const p = pointAt(rd.info, r(0.05, 0.97));
-      competitors.push({ id: 'CMP-' + idx + i, brand: pick(['Brand B', 'Brand C', 'Private P']), lng: p.lng + r(-0.003, 0.003), lat: p.lat + r(-0.003, 0.003), estDaily: rd.kind === 'Highway' ? r(7, 18) : rd.kind === 'Urban' ? r(4, 11) : r(2, 4) });
+      competitors.push({ id: 'CMP-' + idx + i, brand: pick(['Brand B', 'Brand C', 'Private P']), ...lngLat(onRoad(p.lng + r(-0.003, 0.003), p.lat + r(-0.003, 0.003))), estDaily: rd.kind === 'Highway' ? r(7, 18) : rd.kind === 'Urban' ? r(4, 11) : r(2, 4) });
     }
   });
   for (let i = 0; i < 7; i++) {
     const ang = r(0, Math.PI * 2), rad = r(0.01, 0.04);
-    competitors.push({ id: 'CMP-c' + i, brand: pick(['Brand B', 'Brand C', 'Private P']), lng: CITY_CENTER[0] + Math.cos(ang) * rad, lat: CITY_CENTER[1] + Math.sin(ang) * rad, estDaily: r(4, 11) });
+    competitors.push({ id: 'CMP-c' + i, brand: pick(['Brand B', 'Brand C', 'Private P']), ...lngLat(onRoad(CITY_CENTER[0] + Math.cos(ang) * rad, CITY_CENTER[1] + Math.sin(ang) * rad)), estDaily: r(4, 11) });
   }
   // the competitor near the declining outlet
-  competitors.push({ id: 'CMP-new', brand: 'Private P', lng: S.decline.lng - 0.008, lat: S.decline.lat - 0.007, estDaily: 9.5, isNew: true });
+  competitors.push({ id: 'CMP-new', brand: 'Private P', ...lngLat(onRoad(S.decline.lng - 0.008, S.decline.lat - 0.007)), estDaily: 9.5, isNew: true });
 
   // ---------- Sales area boundary: padded convex hull ----------
   function hull(points) {
@@ -357,7 +392,8 @@
   area.push(area[0]);
 
   window.DB = {
-    meta: { salesArea: 'Gurugram Sales Area', division: 'Gurugram Division', state: 'Haryana State Office', officer: 'Sales Officer, Gurugram SA', generatedAt: NOW },
+    // Sales hierarchy: State Office → Divisional Office → Retail Sales Area (the Sales Officer's patch)
+    meta: { salesArea: 'Gurugram Retail Sales Area', division: 'Gurugram Divisional Office', state: 'Haryana State Office', officer: 'Sales Officer, Gurugram Retail Sales Area', generatedAt: NOW },
     PRODUCTS, ROADS, HOURLY, outlets, depots, tankers, competitors, area, stories: S,
     util: { haversineKm, pathInfo, pointAt, buildRoute, nearestDepot, dayFractionElapsed, istNow, mulberry32, DAY, TZ: 'Asia/Kolkata' },
     byId: (id) => outlets.find((o) => o.id === id),
