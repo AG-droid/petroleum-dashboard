@@ -30,6 +30,7 @@ class TankOut(BaseModel):
     source: str | None
     water_mm: float | None
     temp_c: float | None
+    projected: bool = Field(description="True when estimated_l is projected (manual dip or quiet gauge).")
 
 
 class ProductOut(BaseModel):

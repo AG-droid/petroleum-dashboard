@@ -30,10 +30,10 @@ def _open_counts(session: SessionDep) -> Counter[int]:
 
 
 def _state_for(session: SessionDep, settings: SettingsDep, code: str) -> OutletState:
-    st = next((s for s in compute_states(session, settings) if s.outlet.code == code), None)
-    if st is None:
+    """State of one outlet, computed for that outlet only."""
+    if session.scalar(select(Outlet.id).where(Outlet.code == code)) is None:
         raise HTTPException(404, f"outlet {code} not found")
-    return st
+    return compute_states(session, settings, codes=[code])[0]
 
 
 @router.get("/health", response_model=schemas.Health, tags=["system"])

@@ -11,12 +11,13 @@ All outlets are computed together with a handful of set-based queries (no per-ou
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func, select, true
+from sqlalchemy.orm import Session, aliased, selectinload
 
 from prahari.config import Settings
 from prahari.domain.demand import sales_fraction_since
@@ -37,6 +38,7 @@ from prahari.models.supply import INDENT_COVERING, INDENT_ON_HOLD
 
 HISTORY_DAYS = 30
 MORNING_DIP_WINDOW = timedelta(hours=3)  # a "morning dip" is taken within 3 h of the day's start
+READING_LOOKBACK = timedelta(days=3)  # older readings are too stale to project from
 
 
 @dataclass
@@ -50,6 +52,7 @@ class TankState:
     source: str | None
     water_mm: float | None
     temp_c: float | None
+    projected: bool = False  # True when not a fresh gauge reading (see ``_stock``)
 
 
 @dataclass
@@ -78,6 +81,9 @@ class OutletState:
     open_indents: list[Indent] = field(default_factory=list)
     receipts: list[Receipt] = field(default_factory=list)
     licences: list[tuple[Licence, int]] = field(default_factory=list)  # (licence, days left)
+    # Alert keys (or prefixes) whose condition can't be judged for lack of data. The rules engine
+    # leaves matching alerts as they are instead of resolving them.
+    unknown: set[str] = field(default_factory=set)
 
     @property
     def min_cover(self) -> ProductState | None:
@@ -95,26 +101,32 @@ class OutletState:
         )
 
 
-def compute_states(session: Session, settings: Settings, *, at: datetime | None = None) -> list[OutletState]:
-    """Return the state of every outlet as of ``at`` (default: now)."""
+def compute_states(
+    session: Session,
+    settings: Settings,
+    *,
+    at: datetime | None = None,
+    codes: Collection[str] | None = None,
+) -> list[OutletState]:
+    """Return the state of every outlet (or only those in ``codes``) as of ``at`` (default: now)."""
     at = at or now_utc()
     tz, start_hour = settings.tz, settings.business_day_start_hour
     today = business_date(at, tz, start_hour)
     day_start = business_day_start(today, tz, start_hour)
     first_day = today - timedelta(days=HISTORY_DAYS)
 
-    outlets = list(
-        session.scalars(
-            select(Outlet)
-            .options(
-                selectinload(Outlet.tanks),
-                selectinload(Outlet.nozzles),
-                selectinload(Outlet.licences),
-                selectinload(Outlet.dealer),
-            )
-            .order_by(Outlet.code)
-        )
+    q = select(Outlet).options(
+        selectinload(Outlet.tanks),
+        selectinload(Outlet.nozzles),
+        selectinload(Outlet.licences),
+        selectinload(Outlet.dealer),
     )
+    if codes is not None:
+        q = q.where(Outlet.code.in_(list(codes)))
+    outlets = list(session.scalars(q.order_by(Outlet.code)))
+    if not outlets:
+        return []
+    outlet_ids = [o.id for o in outlets]
     tanks_by_id: dict[int, Tank] = {t.id: t for o in outlets for t in o.tanks}
     nozzles_by_id: dict[int, Nozzle] = {n.id: n for o in outlets for n in o.nozzles}
 
@@ -128,71 +140,73 @@ def compute_states(session: Session, settings: Settings, *, at: datetime | None 
             func.sum(NozzleDailySales.net_sale_l),
         )
         .join(Nozzle, Nozzle.id == NozzleDailySales.nozzle_id)
-        .where(NozzleDailySales.business_date >= first_day, NozzleDailySales.business_date < today)
+        .where(
+            Nozzle.outlet_id.in_(outlet_ids),
+            NozzleDailySales.business_date >= first_day,
+            NozzleDailySales.business_date < today,
+        )
         .group_by(Nozzle.outlet_id, Nozzle.product_code, NozzleDailySales.business_date)
     ):
         daily[outlet_id][d][product] = float(litres)
 
-    # --- latest tank reading (any source) and latest automation reading ----------------------
-    latest: dict[int, TankReading] = {
-        r.tank_id: r
-        for r in session.scalars(
-            select(TankReading)
-            .where(TankReading.observed_at >= at - timedelta(days=3), TankReading.observed_at <= at)
-            .distinct(TankReading.tank_id)
-            .order_by(TankReading.tank_id, TankReading.observed_at.desc())
-        )
-    }
-    last_auto: dict[int, datetime] = defaultdict(lambda: datetime.min.replace(tzinfo=at.tzinfo))
-    for tank_id, ts in session.execute(
-        select(TankReading.tank_id, func.max(TankReading.observed_at))
-        .where(TankReading.source == SOURCE_AUTOMATION, TankReading.observed_at >= at - timedelta(days=2))
-        .group_by(TankReading.tank_id)
-    ):
+    # --- latest readings: one index-backed lookup per tank / nozzle -----------------------------
+    latest = _latest_tank_readings(session, list(tanks_by_id), at, at - READING_LOOKBACK)
+    latest_auto = _latest_tank_readings(
+        session, list(tanks_by_id), at, at - READING_LOOKBACK, SOURCE_AUTOMATION
+    )
+    stale = timedelta(minutes=settings.rules.automation_stale_minutes)
+    last_auto: dict[int, datetime] = {}
+    for tank_id, r in latest_auto.items():
         oid = tanks_by_id[tank_id].outlet_id
-        last_auto[oid] = max(last_auto[oid], ts)
-    feed_active = any(
-        ts >= at - timedelta(minutes=settings.rules.automation_stale_minutes) for ts in last_auto.values()
+        last_auto[oid] = max(last_auto.get(oid, r.observed_at), r.observed_at)
+    # Whether any live feed is running at all (system-wide, not just for the requested outlets).
+    feed_active = bool(
+        session.scalar(
+            select(TankReading.observed_at)
+            .where(
+                TankReading.source == SOURCE_AUTOMATION,
+                TankReading.observed_at > at - stale,
+                TankReading.observed_at <= at,
+            )
+            .limit(1)
+        )
     )
 
-    # --- morning dips for the variation window ------------------------------------------------
+    # --- morning dips for the variation window (first dip of each business day) ---------------
     window = settings.rules.variation_window_days
     var_start = today - timedelta(days=window)
     morning: dict[tuple[int, date], float] = {}
     for d in (var_start, today):
         s = business_day_start(d, tz, start_hour)
         for r in session.scalars(
-            select(TankReading).where(
+            select(TankReading)
+            .where(
+                TankReading.tank_id.in_(list(tanks_by_id)),
                 TankReading.source == SOURCE_DIP_REGISTER,
                 TankReading.observed_at >= s,
-                TankReading.observed_at < s + MORNING_DIP_WINDOW,
+                TankReading.observed_at < min(s + MORNING_DIP_WINDOW, at + timedelta(microseconds=1)),
             )
+            .order_by(TankReading.observed_at)
         ):
-            morning[(r.tank_id, d)] = r.volume_l
+            morning.setdefault((r.tank_id, d), r.volume_l)  # a later re-dip doesn't replace it
 
     # --- live sales today: latest totaliser minus yesterday's DSR closing ---------------------
-    openings = {
-        nid: closing
-        for nid, closing in session.execute(
+    openings = dict(
+        session.execute(
             select(NozzleDailySales.nozzle_id, NozzleDailySales.closing_l).where(
-                NozzleDailySales.business_date == today - timedelta(days=1)
+                NozzleDailySales.nozzle_id.in_(list(nozzles_by_id)),
+                NozzleDailySales.business_date == today - timedelta(days=1),
             )
         )
-    }
-    live_tot: dict[int, TotalizerReading] = {
-        r.nozzle_id: r
-        for r in session.scalars(
-            select(TotalizerReading)
-            .where(TotalizerReading.observed_at >= day_start, TotalizerReading.observed_at <= at)
-            .distinct(TotalizerReading.nozzle_id)
-            .order_by(TotalizerReading.nozzle_id, TotalizerReading.observed_at.desc())
-        )
-    }
+        .tuples()
+        .all()
+    )
+    live_tot = _latest_totalizers(session, list(nozzles_by_id), at, day_start)
     today_sales: dict[int, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     today_asof: dict[int, datetime] = {}
     for nid, reading in live_tot.items():
-        nozzle = nozzles_by_id.get(nid)
-        if nozzle is None or nid not in openings:
+        nozzle = nozzles_by_id[nid]
+        if nid not in openings:
             continue
         today_sales[nozzle.outlet_id][nozzle.product_code] += max(0.0, reading.totalizer_l - openings[nid])
         today_asof[nozzle.outlet_id] = max(
@@ -203,14 +217,18 @@ def compute_states(session: Session, settings: Settings, *, at: datetime | None 
     indents: dict[int, list[Indent]] = defaultdict(list)
     for ind in session.scalars(
         select(Indent)
-        .where(Indent.status.in_(INDENT_COVERING | {INDENT_ON_HOLD}))
+        .where(Indent.outlet_id.in_(outlet_ids), Indent.status.in_(INDENT_COVERING | {INDENT_ON_HOLD}))
         .order_by(Indent.indent_date.desc())
     ):
         indents[ind.outlet_id].append(ind)
     receipts: dict[int, list[Receipt]] = defaultdict(list)
     for rc in session.scalars(
         select(Receipt)
-        .where(Receipt.received_at >= at - timedelta(days=HISTORY_DAYS))
+        .where(
+            Receipt.outlet_id.in_(outlet_ids),
+            Receipt.received_at >= at - timedelta(days=HISTORY_DAYS),
+            Receipt.received_at <= at,
+        )
         .order_by(Receipt.received_at.desc())
     ):
         receipts[rc.outlet_id].append(rc)
@@ -228,17 +246,61 @@ def compute_states(session: Session, settings: Settings, *, at: datetime | None 
             st.today_l = dict(today_sales[o.id])
             st.today_as_of = today_asof[o.id]
         if o.is_automated:
-            seen = last_auto.get(o.id)
-            st.last_automation_at = seen if seen and seen.year > 1 else None
-            fresh = st.last_automation_at is not None and st.last_automation_at >= at - timedelta(
-                minutes=settings.rules.automation_stale_minutes
-            )
-            # Without any live feed in the system we can't call an outlet offline; leave it unknown.
+            st.last_automation_at = last_auto.get(o.id)
+            fresh = st.last_automation_at is not None and st.last_automation_at > at - stale
+            # With no live feed running anywhere we can't tell an outlet is offline: unknown.
             st.automation_online = fresh if feed_active else None
+            if st.automation_online is None:
+                st.unknown.add(f"ra:{o.code}")
         _stock(st, o, latest, days, at, settings)
         st.variation_pct = _variation(o, days, morning, st.receipts, var_start, today, tz, start_hour)
+        if st.variation_pct is None:
+            st.unknown.add(f"var:{o.code}")
         states.append(st)
     return states
+
+
+def _latest_tank_readings(
+    session: Session, tank_ids: list[int], at: datetime, since: datetime, source: str | None = None
+) -> dict[int, TankReading]:
+    """Newest reading per tank in ``(since, at]``, via a LATERAL ... LIMIT 1 per tank.
+
+    Each lookup is a backward scan of the (tank_id, observed_at) primary-key index, so the cost
+    doesn't grow with the number of readings stored (a live feed adds thousands per hour).
+    """
+    if not tank_ids:
+        return {}
+    cond = [TankReading.tank_id == Tank.id, TankReading.observed_at <= at, TankReading.observed_at > since]
+    if source is not None:
+        cond.append(TankReading.source == source)
+    sub = select(TankReading).where(*cond).order_by(TankReading.observed_at.desc()).limit(1).lateral()
+    reading = aliased(TankReading, sub)
+    rows = session.scalars(select(reading).select_from(Tank).join(sub, true()).where(Tank.id.in_(tank_ids)))
+    return {r.tank_id: r for r in rows}
+
+
+def _latest_totalizers(
+    session: Session, nozzle_ids: list[int], at: datetime, since: datetime
+) -> dict[int, TotalizerReading]:
+    """Newest totaliser reading per nozzle in ``[since, at]`` (same LATERAL pattern)."""
+    if not nozzle_ids:
+        return {}
+    sub = (
+        select(TotalizerReading)
+        .where(
+            TotalizerReading.nozzle_id == Nozzle.id,
+            TotalizerReading.observed_at <= at,
+            TotalizerReading.observed_at >= since,
+        )
+        .order_by(TotalizerReading.observed_at.desc())
+        .limit(1)
+        .lateral()
+    )
+    reading = aliased(TotalizerReading, sub)
+    rows = session.scalars(
+        select(reading).select_from(Nozzle).join(sub, true()).where(Nozzle.id.in_(nozzle_ids))
+    )
+    return {r.nozzle_id: r for r in rows}
 
 
 def _history(st: OutletState, days: dict[date, dict[str, float]], today: date, first_day: date) -> None:
@@ -257,6 +319,21 @@ def _history(st: OutletState, days: dict[date, dict[str, float]], today: date, f
         d += timedelta(days=1)
 
 
+def sales_days_between(earlier: datetime, later: datetime, tz: ZoneInfo, start_hour: int) -> float:
+    """How many days' worth of sales happen between two instants, following the demand curve.
+
+    Whole business days count as 1 each; partial days count by the hourly profile (a reading at
+    06:10 and another at 12:00 the same day are ~0.35 of a day's sales apart, not 0.24).
+    """
+    if later <= earlier:
+        return 0.0
+    whole = (business_date(later, tz, start_hour) - business_date(earlier, tz, start_hour)).days
+    part = sales_fraction_since(start_hour, later.astimezone(tz)) - sales_fraction_since(
+        start_hour, earlier.astimezone(tz)
+    )
+    return max(0.0, whole + part)
+
+
 def _stock(
     st: OutletState,
     o: Outlet,
@@ -265,25 +342,33 @@ def _stock(
     at: datetime,
     settings: Settings,
 ) -> None:
-    window = settings.rules.cover_window_days
-    recent = sorted(days)[-window:]
+    """Stock per tank and product, "now".
+
+    A fresh tank-gauge reading is used as is. Anything else (a manual dip, or a gauge that has gone
+    quiet) is projected forward: minus the sales expected since it was taken, plus deliveries
+    received into that tank since. Projected figures are flagged as estimates.
+    """
+    recent = sorted(days)[-settings.rules.cover_window_days :]
     tz, start_hour = settings.tz, settings.business_day_start_hour
+    stale = timedelta(minutes=settings.rules.automation_stale_minutes)
     for t in o.tanks:
         r = latest.get(t.id)
-        est = None
+        est, projected = None, False
         if r is not None:
             est = r.volume_l
-            if r.source != SOURCE_AUTOMATION:
-                # Project a manual dip forward by the sales expected since it was taken.
+            if not (r.source == SOURCE_AUTOMATION and at - r.observed_at <= stale):
                 avg = sum(days[d].get(t.product_code, 0.0) for d in recent) / len(recent) if recent else 0.0
                 share = t.capacity_kl / max(
-                    sum(x.capacity_kl for x in o.tanks if x.product_code == t.product_code), 1
+                    sum(x.capacity_kl for x in o.tanks if x.product_code == t.product_code), 1e-9
                 )
-                since = sales_fraction_since(start_hour, at.astimezone(tz)) - sales_fraction_since(
-                    start_hour, r.observed_at.astimezone(tz)
+                received = sum(
+                    rc.invoice_qty_kl * 1000 - rc.shortage_l
+                    for rc in st.receipts
+                    if rc.tank_no == t.tank_no and r.observed_at < rc.received_at <= at
                 )
-                if business_date(r.observed_at, tz, start_hour) == st.business_date and since > 0:
-                    est = max(0.0, r.volume_l - avg * share * since)
+                sold = avg * share * sales_days_between(r.observed_at, at, tz, start_hour)
+                est = min(max(0.0, r.volume_l + received - sold), t.capacity_kl * 1000)
+                projected = True
         st.tanks.append(
             TankState(
                 t.tank_no,
@@ -295,6 +380,7 @@ def _stock(
                 r.source if r else None,
                 r.water_mm if r else None,
                 r.temp_c if r else None,
+                projected,
             )
         )
     for p in sorted({t.product_code for t in o.tanks}):
@@ -303,13 +389,10 @@ def _stock(
         stock: float | None = sum(known) if len(known) == len(ts) else None
         avg_daily = sum(days[d].get(p, 0.0) for d in recent) / len(recent) if recent else None
         cover = stock / avg_daily if stock is not None and avg_daily else None
+        if cover is None:
+            st.unknown |= {f"dry:{o.code}:{p}", f"low:{o.code}:{p}"}
         st.products[p] = ProductState(
-            p,
-            stock,
-            sum(t.capacity_l for t in ts),
-            avg_daily,
-            cover,
-            estimated=any(t.source != SOURCE_AUTOMATION for t in ts),
+            p, stock, sum(t.capacity_l for t in ts), avg_daily, cover, estimated=any(t.projected for t in ts)
         )
 
 

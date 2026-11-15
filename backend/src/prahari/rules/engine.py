@@ -184,7 +184,7 @@ def rule_automation(st: OutletState, th: RuleThresholds) -> Iterable[AlertSpec]:
             o.id,
             f"Automation offline at {o.name}",
             f"No tank-gauge or pump data for over {th.automation_stale_minutes} minutes. "
-            "Stock and sales figures are from the last manual dip.",
+            "Stock is estimated from the last reading and expected sales until data arrives.",
             {"last_seen": st.last_automation_at.isoformat() if st.last_automation_at else None},
         )
 
