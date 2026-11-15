@@ -7,7 +7,6 @@ them. Rows that fail validation are reported with their row number and reason; t
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -15,6 +14,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -88,7 +88,7 @@ class _Lookups:
         self.products = set(session.scalars(select(Product.code)))
 
     def outlet(self, values: dict[str, Any]) -> int:
-        sap = _get(values, SAP, parse.code)
+        sap = _get(values, SAP, parse.code, max_len=16)
         if sap not in self.outlets:
             raise _CellError(SAP, f"{SAP} {sap} is not in the outlet master (import RO_MASTER first)")
         return self.outlets[sap]
@@ -120,17 +120,32 @@ def _run(
     table: Table,
     build: Callable[[dict[str, Any]], dict[str, Any]],
     write: Callable[[list[dict[str, Any]]], None],
+    key: list[str],
 ) -> ImportResult:
-    """Validate every row with ``build``; pass the accepted records to ``write`` in one batch."""
+    """Validate every row with ``build``; pass the accepted records to ``write`` in one batch.
+
+    ``key`` names the record fields that form the natural key. A key repeated within one file
+    (e.g. a dip entered twice) is rejected as a duplicate of the earlier row: a single upsert
+    statement can't touch the same row twice, and the first entry is the one on the register.
+    """
     result = ImportResult(total=len(table.rows))
     records: list[dict[str, Any]] = []
+    first_row: dict[tuple[Any, ...], int] = {}
     for row_no, values in table.rows:
         try:
-            records.append(build(values))
+            record = build(values)
         except _CellError as exc:
             result.errors.append(RowError(row_no, exc.column, str(exc)))
+            continue
         except ValueError as exc:
             result.errors.append(RowError(row_no, None, str(exc)))
+            continue
+        k = tuple(record[f] for f in key)
+        if k in first_row:
+            result.errors.append(RowError(row_no, None, f"duplicate of row {first_row[k]}"))
+            continue
+        first_row[k] = row_no
+        records.append(record)
     if records:
         write(records)
     result.accepted = len(records)
@@ -154,53 +169,50 @@ def _upsert(session: Session, model: Any, records: list[dict[str, Any]], keys: l
 # --------------------------------------------------------------------------------------------
 # Sales area (JSON): area, depots and products
 # --------------------------------------------------------------------------------------------
+class _ProductIn(BaseModel):
+    code: str = Field(min_length=1, max_length=8)
+    name: str = Field(min_length=1, max_length=60)
+    price_per_l: float = Field(gt=0, lt=1000)
+    density_min: float = Field(gt=600, lt=1000)
+    density_max: float = Field(gt=600, lt=1000)
+
+
+class _DepotIn(BaseModel):
+    code: str = Field(min_length=1, max_length=16)
+    name: str = Field(min_length=1, max_length=120)
+    lat: float = Field(ge=6, le=37)
+    lng: float = Field(ge=68, le=98)
+    capacity_kl: float | None = Field(None, ge=0)
+
+
+class _SalesAreaIn(BaseModel):
+    code: str = Field(min_length=1, max_length=16)
+    name: str = Field(min_length=1, max_length=120)
+    division: str | None = Field(None, max_length=120)
+    state_office: str | None = Field(None, max_length=120)
+    boundary: list[list[float]] | None = None
+    products: list[_ProductIn] = Field(default_factory=list)
+    depots: list[_DepotIn] = Field(default_factory=list)
+
+
 def import_sales_area(session: Session, path: Path) -> ImportResult:
+    """Sales area profile (JSON): the area, its depots and products. Validated as a whole."""
     try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-        records = {"code": parse.text(doc["code"], max_len=16), "name": parse.text(doc["name"])}
-    except (KeyError, ValueError, json.JSONDecodeError) as exc:
-        return ImportResult(total=1, errors=[RowError(1, None, f"invalid sales-area file: {exc}")])
+        doc = _SalesAreaIn.model_validate_json(path.read_bytes())
+    except ValidationError as exc:
+        errors = [RowError(0, ".".join(map(str, e["loc"])) or None, e["msg"]) for e in exc.errors()[:50]]
+        return ImportResult(total=1, errors=errors)
     _upsert(
         session,
         SalesArea,
-        [
-            {
-                **records,
-                "division": doc.get("division"),
-                "state_office": doc.get("state_office"),
-                "boundary": doc.get("boundary"),
-            }
-        ],
+        [doc.model_dump(include={"code", "name", "division", "state_office", "boundary"})],
         ["code"],
     )
-    _upsert(
-        session,
-        Product,
-        [
-            {
-                "code": p["code"],
-                "name": p["name"],
-                "price_per_l": p["price_per_l"],
-                "density_min": p["density_min"],
-                "density_max": p["density_max"],
-            }
-            for p in doc.get("products", [])
-        ],
-        ["code"],
-    )
-    depots = [
-        {
-            "code": d["code"],
-            "name": d["name"],
-            "lat": d["lat"],
-            "lng": d["lng"],
-            "capacity_kl": d.get("capacity_kl"),
-        }
-        for d in doc.get("depots", [])
-    ]
-    if depots:
-        _upsert(session, Depot, depots, ["code"])
-    n = 1 + len(doc.get("products", [])) + len(depots)
+    if doc.products:
+        _upsert(session, Product, [p.model_dump() for p in doc.products], ["code"])
+    if doc.depots:
+        _upsert(session, Depot, [d.model_dump() for d in doc.depots], ["code"])
+    n = 1 + len(doc.products) + len(doc.depots)
     return ImportResult(total=n, accepted=n)
 
 
@@ -228,8 +240,8 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
         if ownership not in {"DODO", "CODO", "COCO"}:
             raise _CellError("RO_TYPE", f"RO_TYPE {ownership!r} must be DODO, CODO or COCO")
         return {
-            "sap_code": _get(v, SAP, parse.code),
-            "code": _get(v, "RO_REF", parse.code),
+            "sap_code": _get(v, SAP, parse.code, max_len=16),
+            "code": _get(v, "RO_REF", parse.code, max_len=16),
             "name": _get(v, "RO_NAME", parse.text, max_len=120),
             "sales_area_id": area_id(v),
             "category": category,
@@ -266,7 +278,7 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
                     setattr(outlet.dealer, k, val)
         session.flush()
 
-    return _run(table, build, write)
+    return _run(table, build, write, ["sap_code"])
 
 
 def import_tank_master(session: Session, table: Table) -> ImportResult:
@@ -282,7 +294,12 @@ def import_tank_master(session: Session, table: Table) -> ImportResult:
             "length_mm": _get(v, "LENGTH_MM", parse.number, min_value=500, max_value=20000),
         }
 
-    return _run(table, build, lambda rs: _upsert(session, Tank, rs, ["outlet_id", "tank_no"]))
+    return _run(
+        table,
+        build,
+        lambda rs: _upsert(session, Tank, rs, ["outlet_id", "tank_no"]),
+        ["outlet_id", "tank_no"],
+    )
 
 
 def import_nozzle_master(session: Session, table: Table) -> ImportResult:
@@ -300,7 +317,12 @@ def import_nozzle_master(session: Session, table: Table) -> ImportResult:
             "tank_no": tank.tank_no,
         }
 
-    return _run(table, build, lambda rs: _upsert(session, Nozzle, rs, ["outlet_id", "nozzle_no"]))
+    return _run(
+        table,
+        build,
+        lambda rs: _upsert(session, Nozzle, rs, ["outlet_id", "nozzle_no"]),
+        ["outlet_id", "nozzle_no"],
+    )
 
 
 def import_licences(session: Session, table: Table) -> ImportResult:
@@ -322,7 +344,12 @@ def import_licences(session: Session, table: Table) -> ImportResult:
             "valid_upto": valid,
         }
 
-    return _run(table, build, lambda rs: _upsert(session, Licence, rs, ["outlet_id", "licence_type"]))
+    return _run(
+        table,
+        build,
+        lambda rs: _upsert(session, Licence, rs, ["outlet_id", "licence_type"]),
+        ["outlet_id", "licence_type"],
+    )
 
 
 # --------------------------------------------------------------------------------------------
@@ -354,7 +381,12 @@ def import_receipts(session: Session, table: Table, tz: ZoneInfo) -> ImportResul
             "shortage_l": _get(v, "SHORTAGE_LTRS", parse.number, min_value=0),
         }
 
-    return _run(table, build, lambda rs: _upsert(session, Receipt, rs, ["invoice_no", "tank_no"]))
+    return _run(
+        table,
+        build,
+        lambda rs: _upsert(session, Receipt, rs, ["invoice_no", "tank_no"]),
+        ["invoice_no", "tank_no"],
+    )
 
 
 def import_indents(session: Session, table: Table) -> ImportResult:
@@ -377,7 +409,7 @@ def import_indents(session: Session, table: Table) -> ImportResult:
             "source": "import",
         }
 
-    return _run(table, build, lambda rs: _upsert(session, Indent, rs, ["indent_no"]))
+    return _run(table, build, lambda rs: _upsert(session, Indent, rs, ["indent_no"]), ["indent_no"])
 
 
 # --------------------------------------------------------------------------------------------
@@ -420,7 +452,10 @@ def import_dsr(session: Session, table: Table) -> ImportResult:
         }
 
     return _run(
-        table, build, lambda rs: _upsert(session, NozzleDailySales, rs, ["nozzle_id", "business_date"])
+        table,
+        build,
+        lambda rs: _upsert(session, NozzleDailySales, rs, ["nozzle_id", "business_date"]),
+        ["nozzle_id", "business_date"],
     )
 
 
@@ -430,7 +465,12 @@ def import_dips(session: Session, table: Table, tz: ZoneInfo) -> ImportResult:
     def build(v: dict[str, Any]) -> dict[str, Any]:
         outlet_id = lk.outlet(v)
         tank = lk.tank(outlet_id, v, lk.product(v))
+        # The dip rod measures the total liquid height; water at the bottom is not saleable product.
         dip = _get(v, "DIP_MM", parse.number, min_value=0, max_value=tank.diameter_mm)
+        water = _get(v, "WATER_MM", parse.number, min_value=0, max_value=dip)
+        product_l = volume_from_dip(dip, tank.diameter_mm, tank.length_mm) - volume_from_dip(
+            water, tank.diameter_mm, tank.length_mm
+        )
         return {
             "tank_id": tank.id,
             "observed_at": datetime.combine(
@@ -438,15 +478,18 @@ def import_dips(session: Session, table: Table, tz: ZoneInfo) -> ImportResult:
             ),
             "source": SOURCE_DIP_REGISTER,
             "dip_mm": dip,
-            "volume_l": round(volume_from_dip(dip, tank.diameter_mm, tank.length_mm), 1),
-            "water_mm": _get(v, "WATER_MM", parse.number, min_value=0, max_value=tank.diameter_mm),
+            "volume_l": round(product_l, 1),
+            "water_mm": water,
             "temp_c": _get(v, "TEMP_C", parse.number, min_value=-5, max_value=60),
             "density_obs": _get(v, "OBS_DENSITY", parse.number, min_value=650, max_value=900),
             "density_15": _get(v, "DENSITY_15C", parse.number, min_value=650, max_value=900),
         }
 
     return _run(
-        table, build, lambda rs: _upsert(session, TankReading, rs, ["tank_id", "observed_at", "source"])
+        table,
+        build,
+        lambda rs: _upsert(session, TankReading, rs, ["tank_id", "observed_at", "source"]),
+        ["tank_id", "observed_at", "source"],
     )
 
 

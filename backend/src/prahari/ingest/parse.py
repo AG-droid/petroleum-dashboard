@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import date, datetime, time
 from typing import Any
 
@@ -30,8 +31,8 @@ def number(v: Any, *, min_value: float | None = None, max_value: float | None = 
         x = float(str(v).replace(",", "")) if isinstance(v, str) else float(v)
     except (TypeError, ValueError):
         raise ValueError(f"{v!r} is not a number") from None
-    if x != x:  # NaN
-        raise ValueError("is not a number")
+    if not math.isfinite(x):  # NaN, inf
+        raise ValueError("is not a finite number")
     if min_value is not None and x < min_value:
         raise ValueError(f"{x:g} is below {min_value:g}")
     if max_value is not None and x > max_value:
@@ -48,11 +49,11 @@ def integer(v: Any, *, min_value: int | None = None) -> int:
     return int(x)
 
 
-def code(v: Any) -> str:
+def code(v: Any, *, max_len: int = 24) -> str:
     """Identifiers such as SAP codes: Excel may store them as numbers (12100137.0)."""
     if isinstance(v, float) and v.is_integer():
         v = int(v)
-    return text(v, max_len=24)
+    return text(v, max_len=max_len)
 
 
 def day(v: Any) -> date:

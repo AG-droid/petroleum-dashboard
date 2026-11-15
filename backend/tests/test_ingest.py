@@ -6,6 +6,7 @@ import csv
 import shutil
 from pathlib import Path
 
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -90,3 +91,77 @@ def test_directory_import_orders_masters_first(
     kinds = [j.kind for j in jobs]
     assert kinds[:4] == ["sales_area", "ro_master", "tank_master", "nozzle_master"]
     assert all(j.status == "succeeded" for j in jobs)
+
+
+def test_duplicate_key_in_one_file_is_a_row_error(
+    session: Session, settings: Settings, tmp_path: Path
+) -> None:
+    from prahari.models import Nozzle
+
+    outlet = session.scalar(select(Outlet).where(Outlet.code == "GGN-101"))
+    assert outlet is not None
+    n1, n2 = [n for n in session.scalars(select(Nozzle).where(Nozzle.outlet_id == outlet.id))][:2]
+    row = ["01-01-2026", outlet.sap_code, n1.du_no, n1.nozzle_no, n1.product_code, 1000, 1105, 5, 100, 100, 1]
+    other = [
+        "01-01-2026",
+        outlet.sap_code,
+        n2.du_no,
+        n2.nozzle_no,
+        n2.product_code,
+        2000,
+        2105,
+        5,
+        100,
+        100,
+        1,
+    ]
+    job = import_file(session, _write_dsr(tmp_path / "dup.csv", [row, other, row]), settings)
+    assert (job.status, job.rows_accepted, job.rows_rejected) == ("partial", 2, 1)
+    assert (job.errors or [{}])[0]["message"] == "duplicate of row 2"
+
+
+def test_overlong_codes_and_infinite_numbers_are_row_errors(
+    session: Session, settings: Settings, tmp_path: Path
+) -> None:
+    sap = session.scalar(select(Outlet.sap_code).where(Outlet.code == "GGN-101"))
+    rows = [
+        ["01-01-2026", "1" * 20, 1, 1, "MS", 1000, 1105, 5, 100, 100, 10000],
+        ["01-01-2026", sap, 1, 1, "MS", "inf", "inf", 5, 0, 100, 10000],
+    ]
+    job = import_file(session, _write_dsr(tmp_path / "bad.csv", rows), settings)
+    messages = [e["message"] for e in job.errors or []]
+    assert job.rows_rejected == 2
+    assert "longer than 16" in messages[0] and "finite" in messages[1]
+
+
+def test_water_is_not_counted_as_product(session: Session, settings: Settings, tmp_path: Path) -> None:
+    from prahari.domain.calibration import volume_from_dip
+    from prahari.models import Tank
+
+    outlet = session.scalar(select(Outlet).where(Outlet.code == "GGN-101"))
+    assert outlet is not None
+    tank: Tank = outlet.tanks[0]
+    path = tmp_path / "dip.csv"
+    with path.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(FORMATS[FileKind.DIP_REGISTER].columns)
+        w.writerow(
+            ["01-01-2026", "06:00", outlet.sap_code, tank.tank_no, tank.product_code, 1200, 50, 25, 830, 838]
+        )
+    assert import_file(session, path, settings).status == "succeeded"
+    reading = session.scalar(
+        select(TankReading).where(TankReading.tank_id == tank.id).order_by(TankReading.observed_at)
+    )
+    full = volume_from_dip(1200, tank.diameter_mm, tank.length_mm)
+    water = volume_from_dip(50, tank.diameter_mm, tank.length_mm)
+    assert reading is not None and reading.volume_l == pytest.approx(full - water, abs=0.1)
+
+
+def test_sales_area_json_is_validated(session: Session, settings: Settings, tmp_path: Path) -> None:
+    p = tmp_path / "SALES_AREA.json"
+    p.write_text(
+        '{"kind": "sales_area", "code": "X", "name": "Test", "products": [{"code": "TOO-LONG-CODE"}]}'
+    )
+    job = import_file(session, p, settings)
+    assert job.status == "failed" and job.rows_rejected >= 1
+    assert any(e["column"] and e["column"].startswith("products.0") for e in job.errors or [])
