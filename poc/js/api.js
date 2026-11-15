@@ -48,7 +48,7 @@
       local.stock = litres / 1000;
       if (t.water_mm != null) local.water = t.water_mm;
       if (t.temp_c != null) local.temp = t.temp_c;
-      local.source = t.source; local.asOf = ms(t.as_of);
+      local.source = t.source; local.asOf = ms(t.as_of); local.projected = !!t.projected;
       live = true;
     });
     o._serverStock = live;
@@ -114,6 +114,7 @@
       id: 'S-' + a.id, serverId: a.id, server: true, key: clientKey(a), sev: SEV[a.severity] || 'medium', cat: a.category,
       outletId: a.outlet_code, title: esc(a.title), detail: esc(a.detail), ts: ms(a.opened_at),
       status: a.status === 'acknowledged' ? 'ack' : 'open', fresh: false,
+      product: a.data && a.data.product, receiptId: a.data && a.data.receipt_id,
     }));
     const sig = mapped.map((a) => a.id + a.status + a.title + a.detail).join('|');
     if (sig === Api._alertSig) return;
@@ -168,15 +169,20 @@
     const A = Sim.actions;
     const orig = { priorityDispatch: A.priorityDispatch, holdTank: A.holdTank, ack: A.ack };
     const dropAlert = (key) => { Sim.alerts = Sim.alerts.filter((a) => a.key !== key); Sim.alertsVersion++; Api._alertSig = null; };
+    const serverAlert = (key) => Sim.alerts.find((a) => a.server && a.key === key);
     A.priorityDispatch = (o) => {
+      const dry = serverAlert('dry:' + o.id);
       const truck = orig.priorityDispatch(o); // the truck shown on the map is still simulated
       dropAlert('dry:' + o.id); // optimistic; the server confirms on refresh
-      call(`/outlets/${encodeURIComponent(o.id)}/priority-indent`, { method: 'POST', body: { note: 'Raised from the dashboard' } })
+      const body = { note: 'Raised from the dashboard' };
+      if (dry && dry.product) body.product = dry.product; // the product this alert is about
+      call(`/outlets/${encodeURIComponent(o.id)}/priority-indent`, { method: 'POST', body })
         .then(refresh).catch((e) => UI.toast && UI.toast('Request failed', e.message));
       return truck;
     };
     A.holdTank = (o) => {
-      const id = o._denReceiptId;
+      const den = serverAlert('den:' + o.id);
+      const id = (den && den.receiptId) || o._denReceiptId;
       orig.holdTank(o);
       dropAlert('den:' + o.id);
       if (id) call(`/receipts/${id}/quality-hold`, { method: 'POST' }).then(refresh).catch((e) => UI.toast && UI.toast('Request failed', e.message));
@@ -193,9 +199,10 @@
     if (!Api.connected) return 'simulated tank gauges';
     const t = o.tanks.find((x) => x.source);
     if (!t) return 'no recent reading';
-    if (t.source === 'automation') return 'live from tank gauges';
-    const at = t.asOf ? new Date(t.asOf).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
-    return `from the ${at} manual dip, less sales since`;
+    if (t.source === 'automation' && !t.projected) return 'live from tank gauges';
+    const at = t.asOf ? new Date(t.asOf).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: DB.util.TZ }) : '';
+    const what = t.source === 'automation' ? 'gauge reading (gauge quiet since)' : 'manual dip';
+    return `estimated from the ${at} ${what}, less sales, plus deliveries`;
   };
 
   /** Try to reach the backend; resolves true when connected. Never throws. */
