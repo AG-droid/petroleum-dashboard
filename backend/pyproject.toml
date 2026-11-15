@@ -1,0 +1,75 @@
+[project]
+name = "prahari"
+version = "0.1.0"
+description = "Prahari backend: ingestion, storage, rules and API for petrol-pump operations data"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Proprietary. All rights reserved." }
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.32,<1",
+    "sqlalchemy>=2.0.36,<2.1",
+    "psycopg[binary]>=3.2,<4",
+    "alembic>=1.14,<2",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "openpyxl>=3.1,<4",
+    "python-multipart>=0.0.12",
+    "httpx>=0.27,<1",
+]
+
+[project.scripts]
+prahari = "prahari.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-cov>=6,<7",
+    "ruff>=0.8,<1",
+    "mypy>=1.13,<2",
+    "types-openpyxl",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/prahari"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify, naming, datetime safety, security
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "DTZ", "S", "RUF", "PTH"]
+ignore = [
+    "S101",  # assert is fine in tests
+    "B008",  # FastAPI's Depends() in argument defaults is idiomatic
+    "RUF001", "RUF002", "RUF003",  # typographic characters (−, –, °, ₹) are intentional in user-facing text
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "PLR2004"]
+"src/prahari/db/migrations/**" = ["N999", "E501"]
+"src/prahari/samples/**" = ["S311"]  # random is fine for generating fake data
+"src/prahari/feed.py" = ["S311"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+packages = ["prahari"]
+exclude = ["src/prahari/db/migrations/"]
+
+[[tool.mypy.overrides]]
+module = ["openpyxl.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error::DeprecationWarning:prahari.*"]
