@@ -1,10 +1,11 @@
 # Runs on every push and pull request: the same gate as `make check`, plus an image build.
 name: CI
 
+# Manual only for now: GitHub Actions is unavailable on this account. To run on every change again,
+# restore:   push: {branches: [main, "feature/**", "fix/**"]}   and   pull_request:
+# The same checks run locally with `make check`.
 on:
-  push:
-    branches: [main, "feature/**", "fix/**"]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
