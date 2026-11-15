@@ -58,7 +58,7 @@ def upload(
                 fh.write(chunk)
         job = import_file(session, path, settings, submitted_by=actor, display_name=name, force=force)
     if job.rows_accepted:
-        run_rules(session, settings)
+        run_rules(session, settings, wait=True)
     return schemas.ImportJobOut.model_validate(job)
 
 

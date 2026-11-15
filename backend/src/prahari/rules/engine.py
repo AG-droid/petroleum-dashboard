@@ -32,6 +32,7 @@ from prahari.services.state import OutletState, compute_states
 
 log = logging.getLogger(__name__)
 _LOCK_ID = 7_301_104  # arbitrary, unique to the rules engine
+LOCK_WAIT = "5s"  # how long a user-triggered run waits for a concurrent one
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 LICENCE_LABELS = {
     "PESO": "PESO storage licence",
@@ -211,13 +212,26 @@ class RunSummary:
     skipped: bool = False
 
 
-def run_rules(session: Session, settings: Settings, *, at: datetime | None = None) -> RunSummary:
-    """Evaluate all rules and reconcile the alert table. Caller commits."""
-    if not session.scalar(text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": _LOCK_ID}):
+def run_rules(
+    session: Session, settings: Settings, *, at: datetime | None = None, wait: bool = False
+) -> RunSummary:
+    """Evaluate all rules and reconcile the alert table. Caller commits.
+
+    The scheduler passes ``wait=False`` and simply skips a tick if another run holds the lock.
+    Request handlers pass ``wait=True`` so the response reflects the user's action: they wait up
+    to ``LOCK_WAIT`` for a concurrent run to finish rather than returning stale alerts.
+    """
+    if wait:
+        session.execute(text(f"SET LOCAL lock_timeout = '{LOCK_WAIT}'"))
+        session.execute(text("SELECT pg_advisory_xact_lock(:id)"), {"id": _LOCK_ID})
+    elif not session.scalar(text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": _LOCK_ID}):
         log.info("rules engine already running elsewhere; skipping this run")
         return RunSummary(skipped=True)
     now = at or now_utc()
-    specs = {s.key: s for s in evaluate(compute_states(session, settings, at=now), settings.rules)}
+    states = compute_states(session, settings, at=now)
+    specs = {s.key: s for s in evaluate(states, settings.rules)}
+    # Conditions we couldn't judge (data not in yet, feed down) keep their current alerts.
+    unknown = tuple(u for st in states for u in st.unknown)
     active = {a.key: a for a in session.scalars(select(Alert).where(Alert.status != ALERT_RESOLVED))}
     summary = RunSummary()
     for key, spec in specs.items():
@@ -259,7 +273,7 @@ def run_rules(session: Session, settings: Settings, *, at: datetime | None = Non
             alert.updated_at = now
             summary.updated += 1
     for key, alert in active.items():
-        if key not in specs and alert.rule in OWNED_RULES:
+        if key not in specs and alert.rule in OWNED_RULES and not key.startswith(unknown):
             alert.status, alert.resolved_at, alert.updated_at = ALERT_RESOLVED, now, now
             summary.resolved += 1
     session.flush()

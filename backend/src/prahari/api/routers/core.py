@@ -102,7 +102,7 @@ def priority_indent(
         raise HTTPException(404, str(exc)) from exc
     except actions.ConflictError as exc:
         raise HTTPException(409, str(exc)) from exc
-    run_rules(session, settings)
+    run_rules(session, settings, wait=True)
     return schemas.IndentOut.model_validate(indent)
 
 
@@ -115,7 +115,7 @@ def quality_hold(
         receipt = actions.hold_receipt_for_testing(session, receipt_id, actor)
     except actions.NotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
-    run_rules(session, settings)
+    run_rules(session, settings, wait=True)
     return schemas.ReceiptOut.model_validate(receipt)
 
 

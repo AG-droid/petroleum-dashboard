@@ -131,3 +131,48 @@ def test_escalation_reopens_an_acknowledged_alert(session: Session, settings: Se
     run_rules(session, settings)
     same = _active(session)["lic:LM_STAMPING:GGN-101"]
     assert same.severity == "high" and same.status == "open"
+
+
+def test_missing_data_does_not_resolve_alerts(session: Session, settings: Settings) -> None:
+    """Before today's dips are imported the variation can't be measured: keep the alert, don't flap."""
+    from prahari.domain.time import business_day_start
+    from prahari.models import TankReading
+
+    alert = _active(session)["var:GGN-121"]
+    actions.acknowledge_alert(session, alert.id, "so-test")
+    today = business_date(datetime.now(UTC), settings.tz, settings.business_day_start_hour)
+    start = business_day_start(today, settings.tz, settings.business_day_start_hour)
+    for r in session.scalars(select(TankReading).where(TankReading.observed_at >= start)):
+        session.delete(r)
+    session.flush()
+    run_rules(session, settings)
+    same = _active(session).get("var:GGN-121")
+    assert same is not None and same.id == alert.id and same.status == ALERT_ACKNOWLEDGED
+
+
+def test_feed_outage_keeps_automation_alerts(session: Session, settings: Settings) -> None:
+    from datetime import timedelta
+
+    from prahari.models import Outlet, TankReading
+    from prahari.models.readings import SOURCE_AUTOMATION
+
+    now = datetime.now(UTC)
+    online = session.scalar(select(Outlet).where(Outlet.code == "GGN-101"))
+    assert online is not None
+    session.add(
+        TankReading(
+            tank_id=online.tanks[0].id,
+            observed_at=now - timedelta(minutes=1),
+            source=SOURCE_AUTOMATION,
+            volume_l=5000,
+        )
+    )
+    session.flush()
+    run_rules(session, settings, at=now)
+    assert "ra:GGN-127" in _active(session)  # feed running, scripted outlet silent → offline
+    run_rules(session, settings, at=now + timedelta(hours=5))  # the whole feed has stopped
+    assert "ra:GGN-127" in _active(session)  # unknown is not the same as fixed
+
+
+def test_user_triggered_run_waits_instead_of_skipping(session: Session, settings: Settings) -> None:
+    assert not run_rules(session, settings, wait=True).skipped
