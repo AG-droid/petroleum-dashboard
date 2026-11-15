@@ -274,6 +274,9 @@ petroleum-dashboard/
     ├── research/
     │   ├── how-indian-petrol-pumps-work.md   ← industry primer (also .pdf)
     │   └── supply-chain-diagram.png
+    ├── architecture/
+    │   ├── system-diagrams.md                ← how the whole system works, in 20 diagrams
+    │   └── img/                              ← rendered PNGs of each diagram
     ├── planning/
     │   └── architecture-and-scaling.md       ← hardware integration, architecture, team
     └── screenshots/                          ← images used in this README
@@ -284,6 +287,7 @@ petroleum-dashboard/
 | Document | What it covers |
 | --- | --- |
 | [How Indian petrol pumps work](docs/research/how-indian-petrol-pumps-work.md) | Industry structure, the supply chain, roles, a day at a pump, ordering and receiving fuel, **inventory of the data that exists today**, systems in use, money, compliance, the SO's world, pain points, and a validation checklist for dealer interviews. |
+| [How the system works: 20 diagrams](docs/architecture/system-diagrams.md) | The whole system in pictures: who uses it, the two ways to run it, the containers, startup, backend modules, file import, the live feed, how stock "now" and the stock check are worked out, alert lifecycle and rules, what a button press does end to end, the dashboard and Present mode, the data model, a demo day, sharing, and the development workflow. PNG copies in [`docs/architecture/img/`](docs/architecture/img/). |
 | [Architecture & scaling](docs/planning/architecture-and-scaling.md) | How forecourt hardware (dispensers, ATG, controllers) communicates; five realistic routes to the data; the edge gateway design; platform architecture and the data model; scale estimates; Indian PSU deployment constraints; team and engineering practices for a production system. |
 
 
