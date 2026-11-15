@@ -21,6 +21,7 @@
 8. [Research & planning documents](#8-research--planning-documents)
 9. [Limitations & disclaimer](#9-limitations--disclaimer)
 10. [Tech stack & credits](#10-tech-stack--credits)
+11. [License](#11-license)
 
 ---
 
@@ -68,7 +69,7 @@ Then open **http://localhost:8080** in Chrome.
 
 On macOS you can instead double-click [`poc/start.command`](poc/start.command). It picks a free port and opens the browser for you.
 
-> An internet connection is required (satellite imagery, the map library and fonts load from CDNs). Best viewed on a laptop or desktop at **1440 px width or more**.
+> An internet connection is needed for the map and satellite images. The map library is bundled in `poc/vendor/`, so without internet the dashboard still runs: outlets, trucks and all the data work, and a notice explains that the map images could not load. Best viewed at **1280 px width or more**.
 
 **Shortcuts:** `⌘K` / `Ctrl+K` opens search · `Esc` closes panels.
 
@@ -248,7 +249,8 @@ petroleum-dashboard/
 │   ├── start.command             ← macOS double-click launcher
 │   ├── README.md                 ← POC-specific notes
 │   ├── css/styles.css
-│   └── js/                       ← data, sim, map, ui, cctv, charts, main
+│   ├── js/                       ← data, sim, map, ui, tour, cctv, charts, main
+│   └── vendor/                   ← bundled MapLibre GL JS (works offline)
 └── docs/
     ├── research/
     │   ├── how-indian-petrol-pumps-work.md   ← industry primer (also .pdf)
@@ -277,7 +279,15 @@ petroleum-dashboard/
 
 ## 10. Tech stack & credits
 
-- **[MapLibre GL JS](https://maplibre.org/) 4.7.1:** map rendering (open source, BSD-3)
+- **[MapLibre GL JS](https://maplibre.org/) 4.7.1:** map rendering (open source, BSD-3; bundled in `poc/vendor/` with its licence)
 - **Esri World Imagery and reference layers:** satellite basemap, roads and labels (© Esri, Maxar, Earthstar Geographics and contributors)
 - **Google Fonts:** Inter and JetBrains Mono
 - Everything else (simulation, CCTV renderer, charts, UI) is hand-written vanilla JavaScript.
+
+## 11. License
+
+Copyright 2026 the Prahari authors.
+
+The code and documents in this repository are licensed under the [Apache License 2.0](LICENSE). You may use, change and share them, including commercially, as long as you keep the copyright and license notices.
+
+The license does not grant any rights to the name "Prahari" or its logo (see section 6 of the license). Third-party components keep their own licences: MapLibre GL JS is BSD-3-Clause (`poc/vendor/maplibre-gl-4.7.1/LICENSE.txt`). Esri map tiles and Google Fonts are loaded from their services under those providers' terms and are not covered by this license.
