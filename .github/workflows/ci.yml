@@ -1,0 +1,70 @@
+# Runs on every push and pull request: the same gate as `make check`, plus an image build.
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**", "fix/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      db:
+        image: timescale/timescaledb:2.17.2-pg16
+        env:
+          POSTGRES_USER: prahari
+          POSTGRES_PASSWORD: prahari
+          POSTGRES_DB: prahari
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U prahari" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PRAHARI_DATABASE_URL: postgresql+psycopg://prahari:prahari@localhost:5433/prahari
+      PRAHARI_TEST_ADMIN_URL: postgresql://prahari:prahari@localhost:5433/postgres
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.8"
+          enable-cache: true
+      - name: Install
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check src tests && uv run ruff format --check src tests
+      - name: Type check
+        run: uv run mypy
+      - name: Tests
+        run: uv run pytest -q --cov=prahari --cov-report=term-missing:skip-covered
+      - name: Migrations match the models
+        run: uv run prahari db-upgrade && uv run alembic -c src/prahari/alembic.ini check
+
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the backend image
+        run: docker build -t prahari-backend:ci backend
+
+  dashboard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax-check the dashboard scripts
+        run: for f in poc/js/*.js tools/*.mjs; do node --check "$f"; done
