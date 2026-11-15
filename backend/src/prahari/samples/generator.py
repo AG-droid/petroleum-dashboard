@@ -29,7 +29,7 @@ from zoneinfo import ZoneInfo
 
 from openpyxl import Workbook
 
-from prahari.domain.calibration import dip_from_volume, standard_dimensions
+from prahari.domain.calibration import dip_from_volume, standard_dimensions, volume_from_dip
 from prahari.domain.products import HSD, MS, PRODUCT_NAMES
 from prahari.domain.time import business_date, business_day_start
 from prahari.ingest.formats import FORMATS, SAP, FileKind
@@ -41,6 +41,7 @@ TESTING_L_PER_NOZZLE = 5.0  # the daily 5-litre measure test, returned to the ta
 TRUCKLOADS_KL = (4, 6, 8, 9, 12, 16, 20, 24, 32, 36, 40)
 DRYOUT_MORNING_COVER_DAYS = 0.95  # the dry-out story outlet's diesel at the morning dip
 COVERED_MORNING_COVER_DAYS = 1.1  # the "truck on the way" story outlet's petrol
+SHORTAGES_L = (0, 0, 0, 0, 0, 5, 10, 15, 25, 40)  # typical transit shortages, mostly none
 LICENCE_TYPES = {"peso": "PESO", "stamp": "LM_STAMPING", "fire": "FIRE_NOC", "pcc": "PCB_CONSENT"}
 DENSITY_COEFF = {MS: 0.9, HSD: 0.65}  # kg/m³ per °C (approximate thermal correction)
 
@@ -52,6 +53,9 @@ class _Receipt:
     qty_kl: float
     density_diff: float | None = None  # forced value for storylines
     at_fraction: float = 0.7  # how far through the business day it arrives
+    # Litres short against the invoice. Decided while planning stock, so the dip series reflects
+    # what was actually received and the books balance (it is booked on the first tank's line).
+    shortage_l: float = 0.0
 
 
 @dataclass
@@ -141,7 +145,10 @@ def _plan_outlet(
     if w["code"] == stories["density"]:
         plan.receipts.append(_Receipt(bdays[-1], HSD, 20, density_diff=4.2, at_fraction=0.72))
 
-    variation = float(w["variation_pct"]) / 100
+    # Only the scripted outlet loses stock beyond the limit; elsewhere small, plausible losses.
+    variation = (
+        float(w["variation_pct"]) / 100 if w["code"] == stories["variation"] else rng.uniform(0.0, 0.0025)
+    )
     for p in products:
         cap_l = sum(t["capacity_kl"] for t in tanks if t["product"] == p) * 1000
         stock = sum(t["stock_kl"] for t in tanks if t["product"] == p) * 1000
@@ -158,12 +165,15 @@ def _plan_outlet(
             loss_frac = variation if k < variation_window else rng.uniform(-0.0015, 0.0025)
             before = stock + sold * (1 + loss_frac)  # stock this morning if nothing was received
             if d in forced:
-                before -= forced[d].qty_kl * 1000
+                before -= forced[d].qty_kl * 1000 - forced[d].shortage_l
             elif before > 0.9 * cap_l:
                 qty = _truckload(before, cap_l)
                 if qty:
-                    before -= qty * 1000
-                    plan.receipts.append(_Receipt(d, p, qty, at_fraction=rng.uniform(0.25, 0.8)))
+                    short = float(rng.choice(SHORTAGES_L))
+                    before -= qty * 1000 - short
+                    plan.receipts.append(
+                        _Receipt(d, p, qty, at_fraction=rng.uniform(0.25, 0.8), shortage_l=short)
+                    )
             # No clamping: the stock series must stay exactly consistent with sales and receipts,
             # or the variation rule would (rightly) flag the difference.
             stock = before
@@ -214,7 +224,7 @@ def _receipts_and_indents(
             lo, hi = dens_range[r.product]
             inv_dens = round(rng.uniform(lo + 2, hi - 2), 1)
             diff = r.density_diff if r.density_diff is not None else round(rng.gauss(0, 0.55), 1)
-            for tank, share in _tank_shares(plan, r.product):
+            for line, (tank, share) in enumerate(_tank_shares(plan, r.product)):
                 qty_l = r.qty_kl * 1000 * share
                 before_l = max(plan.stock_l[r.business_date][r.product] * share - sold_so_far * share, 0.0)
                 after_l = min(before_l + qty_l, tank["capacity_kl"] * 1000 * 0.995)
@@ -234,7 +244,7 @@ def _receipts_and_indents(
                         round(inv_dens + diff, 1),
                         round(dip_from_volume(before_l, dia, length)),
                         round(dip_from_volume(after_l, dia, length)),
-                        rng.choice([0, 0, 0, 0, 0, 5, 10, 15, 25, 40]),
+                        r.shortage_l if line == 0 else 0,
                     ]
                 )
             indents.append(
@@ -484,10 +494,21 @@ class _Writer:
         for d in dates:
             rows = []
             for p in plans:
-                at = business_day_start(d, tz, start_hour) + timedelta(minutes=rng.randint(0, 25))
+                # Today's dip is stamped at the start of the day so it is never "in the future"
+                # relative to the moment the data is generated (or a test runs).
+                late = 0 if d == dates[-1] else rng.randint(0, 25)
+                at = business_day_start(d, tz, start_hour) + timedelta(minutes=late)
                 for prod, stock in p.stock_l[d].items():
                     for tank, share in _tank_shares(p, prod):
                         vol = min(stock * share, tank["capacity_kl"] * 1000)
+                        dia, length = tank["diameter_mm"], tank["length_mm"]
+                        water = max(0, round(tank["water_mm"] + rng.uniform(-2, 2)))
+                        # The rod reads product + water; the importer subtracts the water again.
+                        # 0.1 mm, as tank gauges report: whole-mm rounding alone can swing the variation
+                        # of a low-volume product by ~0.4% over 3 days.
+                        dip = round(
+                            dip_from_volume(vol + volume_from_dip(water, dia, length), dia, length), 1
+                        )
                         temp = round(rng.uniform(22, 33), 1)
                         lo, hi = dens_range[prod]
                         d15 = round(rng.uniform(lo + 3, hi - 3), 1)
@@ -499,8 +520,8 @@ class _Writer:
                                 p.sap,
                                 tank["tank_no"],
                                 _file_product(prod),
-                                round(dip_from_volume(vol, tank["diameter_mm"], tank["length_mm"])),
-                                max(0, round(tank["water_mm"] + rng.uniform(-2, 2))),
+                                dip,
+                                water,
                                 temp,
                                 obs,
                                 d15,
