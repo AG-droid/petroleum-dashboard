@@ -39,6 +39,8 @@ SALES_AREA_CODE = "GGN-SA"
 TESTING_L_PER_NOZZLE = 5.0  # the daily 5-litre measure test, returned to the tank
 # Deliveries are whole tank-truck compartments (4–5 kL each): part loads, full trucks, two trucks.
 TRUCKLOADS_KL = (4, 6, 8, 9, 12, 16, 20, 24, 32, 36, 40)
+DRYOUT_MORNING_COVER_DAYS = 0.95  # the dry-out story outlet's diesel at the morning dip
+COVERED_MORNING_COVER_DAYS = 1.1  # the "truck on the way" story outlet's petrol
 LICENCE_TYPES = {"peso": "PESO", "stamp": "LM_STAMPING", "fire": "FIRE_NOC", "pcc": "PCB_CONSENT"}
 DENSITY_COEFF = {MS: 0.9, HSD: 0.65}  # kg/m³ per °C (approximate thermal correction)
 
@@ -143,6 +145,12 @@ def _plan_outlet(
     for p in products:
         cap_l = sum(t["capacity_kl"] for t in tanks if t["product"] == p) * 1000
         stock = sum(t["stock_kl"] for t in tanks if t["product"] == p) * 1000
+        # Supply storylines start the day with about a day's fuel, so they stay "about to run
+        # dry" through the demo day instead of hitting empty in the afternoon.
+        if w["code"] == stories["dryout"] and p == HSD:
+            stock = w["daily_kl"][p] * 1000 * DRYOUT_MORNING_COVER_DAYS
+        elif w["code"] == stories["covered"] and p == MS:
+            stock = w["daily_kl"][p] * 1000 * COVERED_MORNING_COVER_DAYS
         plan.stock_l.setdefault(today, {})[p] = stock
         forced = {r.business_date: r for r in plan.receipts if r.product == p}
         for k, d in enumerate(reversed(bdays)):
