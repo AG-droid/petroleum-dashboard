@@ -91,7 +91,7 @@ On macOS you can instead double-click [`poc/start.command`](poc/start.command). 
 
 | Link | Opens |
 | --- | --- |
-| `/#outlet=GGN-104` | An outlet directly. Add `&tab=sales`, `supply`, `cameras`, `compliance` or `dealer` |
+| `/#outlet=990104` | An outlet directly. Add `&tab=sales`, `supply`, `cameras`, `compliance` or `dealer` |
 | `/#view=surveillance` | A view: `ops`, `outlets`, `logistics`, `surveillance`, `compliance`, `analytics`, `copilot` |
 | `/#base=sat` | Start in satellite view (combine with others, e.g. `/#view=ops&base=sat`) |
 

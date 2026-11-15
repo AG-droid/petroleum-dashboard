@@ -239,7 +239,7 @@ flowchart TB
 
 Every file is checked row by row; good rows load, bad rows are reported with the reason, and
 nothing is duplicated if the same data arrives twice. Examples of checks: a meter reading lower
-than yesterday's, net sales that don't add up, a dip deeper than the tank, a SAP code not in the
+than yesterday's, net sales that don't add up, a dip deeper than the tank, an RO code not in the
 outlet master. Water at the bottom of a tank is subtracted from the dip, because it isn't fuel.
 
 **Import order** (masters first, because later files refer to them):
@@ -351,7 +351,7 @@ stateDiagram-v2
     Resolved --> [*]: kept as history
 ```
 
-Every condition has a stable key, for example `dry:GGN-104:HSD` (diesel at outlet GGN-104), so
+Every condition has a stable key, for example `dry:990104:HSD` (diesel at outlet 990104), so
 the same problem never opens twice. When data is missing (the morning dip not in yet, the feed
 down) an alert is **kept**, not closed, so it doesn't flap and lose its acknowledgement. Runs
 are serialised with a database lock: the scheduler skips a tick if busy; a run caused by a
@@ -399,7 +399,7 @@ sequenceDiagram
 
     SO->>UI: clicks "Send a truck now" on the diesel dry-out alert
     UI->>UI: shows a simulated truck loading at the nearest depot,<br/>hides the alert optimistically
-    UI->>Web: POST /outlets/GGN-104/priority-indent<br/>{product: HSD} + X-Prahari-User header
+    UI->>Web: POST /outlets/990104/priority-indent<br/>{product: HSD} + X-Prahari-User header
     Web->>API: forward
     API->>API: header present? (blocks cross-site requests)<br/>product valid? outlet exists?
     API->>DB: cancel this outlet's expired requests
@@ -409,7 +409,7 @@ sequenceDiagram
         API->>DB: insert indent "Requested" (one open request per outlet and product)
         API->>DB: audit log: who, what, when, which orders were on hold
         API->>Rules: re-run now (wait ≤ 5 s for the lock)
-        Rules->>DB: resolve dry:GGN-104:HSD, open low:GGN-104:HSD
+        Rules->>DB: resolve dry:990104:HSD, open low:990104:HSD
         API-->>UI: 201, the new indent
     end
     UI->>API: GET /ui/snapshot
@@ -496,9 +496,9 @@ erDiagram
     NOZZLE ||--o{ NOZZLE_DAILY_SALES : "daily sales report"
 
     OUTLET {
-        string code "GGN-104"
-        string sap_code "oil company's customer code"
-        string category "Highway, Urban, Rural"
+        string code "RO code, 6 digits (990104)"
+        string sap_code "SAP sold-to code, optional"
+        string market_class "class of market (D1-Highway)"
         bool is_automated
     }
     TANK {
@@ -535,7 +535,7 @@ erDiagram
         string source "import or prahari"
     }
     ALERT {
-        string key "dry:GGN-104:HSD"
+        string key "dry:990104:HSD"
         string severity
         string status "open, acknowledged, resolved"
     }

@@ -48,6 +48,10 @@ make logs        # follow the stack's logs
 - **Time**: always timezone-aware datetimes; business days run from the morning dip (06:00 IST by
   default), see `prahari.domain.time`. Never use naive `datetime.now()`.
 - **Units**: litres (`_l`) and kilolitres (`_kl`) are suffixed in names; mm for dips; kg/m³ for density.
+- **Vocabulary**: outlets are keyed by their 6-digit **RO code** (demo codes are 9901xx; never use
+  real ones). Hierarchy is State Office → Divisional Office → Retail Sales Area; write "Sales
+  Officer" in full ("SO" means State Office). Class of market: A/B/C-Urban, D1/D2-Highway, E-Rural.
+  Product codes stay brand-neutral; oil-company labels (XP95, XG …) are import aliases only.
 - **Data in**: every source goes through a validating importer or a typed payload; imports are
   idempotent upserts on natural keys and recorded as `ImportJob`s with per-row errors.
 - **Database changes**: change the models, then `uv run alembic -c src/prahari/alembic.ini revision

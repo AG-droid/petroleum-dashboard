@@ -89,7 +89,19 @@ milestone.
 | `prahari.api` | FastAPI app, routers, response models |
 | `prahari.samples.generator` | Consistent synthetic month of source files |
 | `prahari.feed` | Demo automation feed (talks to the API over HTTP only) |
-| `prahari.domain` | Pure logic: tank calibration, business days, products |
+| `prahari.domain` | Pure logic: tank calibration, business days, products, RO codes and class of market |
+
+### Vocabulary (as in the oil companies' own systems)
+
+| Term | Meaning in Prahari |
+| --- | --- |
+| **RO code** | Every outlet's 6-digit code, the key in every file and in the API (`/outlets/990104`). A SAP customer code can be stored too, but nothing matches on it |
+| **State Office → Divisional Office → Retail Sales Area (RSA)** | The sales hierarchy. A Sales Officer looks after one RSA; Prahari's "sales area" is an RSA. "SO" means State Office, so the Sales Officer role is always written in full |
+| **Class of market** | A-Urban, B-Urban, C-Urban, D1-Highway, D2-Highway, E-Rural (any spelling such as `d1 highway` is accepted). Highway/Urban/Rural is derived from it |
+| **Products** | Brand-neutral codes: MS, HSD, XP (premium 95), P100, PD (premium diesel), E85, E100, CNG and CBG (sold by kg). Oil-company labels such as `MS-R`, `XP95`, `XP100` and `XG` are accepted in imports and mapped to these |
+
+The demo's RO codes are in the **9901xx** range, kept apart from real outlet codes so a synthetic
+alert can never point at a real outlet.
 
 ### The sample data
 
@@ -97,8 +109,8 @@ milestone.
 
 | File | Contents |
 | --- | --- |
-| `00_master/SALES_AREA.json` | Sales area, boundary, depots, products |
-| `00_master/RO_MASTER.xlsx` | Outlets (SAP customer code, category, location, dealer) |
+| `00_master/SALES_AREA.json` | Retail Sales Area (with its Divisional and State Office), boundary, depots, products (unit L or kg) |
+| `00_master/RO_MASTER.xlsx` | Outlets: 6-digit RO code, optional SAP code, class of market, location, dealer |
 | `00_master/TANK_MASTER.xlsx` | Tanks with dimensions for dip calibration |
 | `00_master/NOZZLE_MASTER.csv` | Dispensing units and nozzles |
 | `01_compliance/LICENCE_REGISTER.csv` | PESO, stamping, fire NOC, pollution consent with expiry dates |
@@ -115,12 +127,12 @@ in `src/prahari/ingest/formats.py`; when real exports are available, adapt them 
 
 | Outlet | What the backend finds |
 | --- | --- |
-| GGN-104 Royal Service Station | Diesel about to run out, order on payment hold → **critical**. "Send a truck now" raises a priority indent and it drops to low |
-| GGN-109 Krishna Filling Station | Last diesel delivery +4.2 kg/m³ against the invoice → **high**. "Hold tank" holds every tank it went into |
-| GGN-121 Cyber Fuel Centre | Book-vs-physical stock variation above 0.5% over 3 days |
-| GGN-131 / GGN-118 | PESO licence / stamping due within 10 days |
-| GGN-114 Gurukul Fuels | Low petrol, but a truck is dispatched → low |
-| GGN-127 Gurukul Auto Fuels | Automation sends nothing → "automation offline" once the feed is running |
+| 990104 Royal Service Station | Diesel about to run out, order on payment hold → **critical**. "Send a truck now" raises a priority indent and it drops to low |
+| 990109 Krishna Filling Station | Last diesel delivery +4.2 kg/m³ against the invoice → **high**. "Hold tank" holds every tank it went into |
+| 990121 Cyber Fuel Centre | Book-vs-physical stock variation above 0.5% over 3 days |
+| 990131 / 990118 | PESO licence / stamping due within 10 days |
+| 990114 Gurukul Fuels | Low petrol, but a truck is dispatched → low |
+| 990127 Gurukul Auto Fuels | Automation sends nothing → "automation offline" once the feed is running |
 
 ---
 
