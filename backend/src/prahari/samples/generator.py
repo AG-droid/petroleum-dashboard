@@ -80,6 +80,10 @@ TESTING_L_PER_NOZZLE = 5.0  # the daily 5-litre measure test, returned to the ta
 TRUCKLOADS_KL = (4, 6, 8, 9, 12, 16, 20, 24, 32, 36, 40)
 DRYOUT_MORNING_COVER_DAYS = 0.95  # the dry-out story outlet's diesel at the morning dip
 COVERED_MORNING_COVER_DAYS = 1.1  # the "truck on the way" story outlet's petrol
+# Every other outlet starts the day with at least this much fuel: the dry-out threshold (1.5 days)
+# plus a full day of sales, so routine outlets never drift into a supply alert by late evening and
+# only the storylines raise one, whatever the time of day.
+ROUTINE_MIN_MORNING_COVER_DAYS = 2.6
 SHORTAGES_L = (0, 0, 0, 0, 0, 5, 10, 15, 25, 40)  # typical transit shortages, mostly none
 LICENCE_TYPES = {"peso": "PESO", "stamp": "LM_STAMPING", "fire": "FIRE_NOC", "pcc": "PCB_CONSENT"}
 DENSITY_COEFF = {MS: 0.9, HSD: 0.65}  # kg/m³ per °C (approximate thermal correction)
@@ -203,6 +207,8 @@ def _plan_outlet(
             stock = w["daily_kl"][p] * 1000 * DRYOUT_MORNING_COVER_DAYS
         elif w["code"] == stories["covered"] and p == MS:
             stock = w["daily_kl"][p] * 1000 * COVERED_MORNING_COVER_DAYS
+        else:
+            stock = min(max(stock, w["daily_kl"][p] * 1000 * ROUTINE_MIN_MORNING_COVER_DAYS), 0.9 * cap_l)
         plan.stock_l.setdefault(today, {})[p] = stock
         forced = {r.business_date: r for r in plan.receipts if r.product == p}
         for k, d in enumerate(reversed(bdays)):
