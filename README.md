@@ -57,7 +57,19 @@ PRAHARI (Hindi for *sentinel*) puts every piece of the territory on one live map
 
 ## 3. Quick start
 
-No build step, no backend, no installation. You only need Python 3 (preinstalled on macOS) and a modern browser.
+There are two ways to run Prahari.
+
+**With the backend** (data imported from OMC-style files, a live feed, alerts raised on the server, actions saved). You need Docker:
+
+```bash
+git clone https://github.com/AG-droid/petroleum-dashboard.git
+cd petroleum-dashboard
+make up        # then open http://localhost:8080   (API docs: /api/docs)
+```
+
+See [`backend/README.md`](backend/README.md) for what it does, the sample data, and how to let others try it.
+
+**Dashboard only** (self-contained demo, simulated in the browser). No build step, no backend, no installation. You only need Python 3 (preinstalled on macOS) and a modern browser.
 
 ```bash
 git clone https://github.com/AG-droid/petroleum-dashboard.git
@@ -249,8 +261,15 @@ petroleum-dashboard/
 │   ├── start.command             ← macOS double-click launcher
 │   ├── README.md                 ← POC-specific notes
 │   ├── css/styles.css
-│   ├── js/                       ← data, sim, map, ui, tour, cctv, charts, main
+│   ├── js/                       ← data, sim, map, ui, tour, cctv, charts, api, main
 │   └── vendor/                   ← bundled MapLibre GL JS (works offline)
+├── backend/                      ← Python/FastAPI backend: importers, rules, API (see its README)
+│   ├── src/prahari/
+│   └── tests/
+├── deploy/                       ← Docker Compose stack (database, API, feed, web server)
+├── tools/                        ← helper scripts
+├── Makefile                      ← make up / check / demo-data …
+├── CLAUDE.md                     ← working agreement for AI agents (incl. the code-review agent)
 └── docs/
     ├── research/
     │   ├── how-indian-petrol-pumps-work.md   ← industry primer (also .pdf)
