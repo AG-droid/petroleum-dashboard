@@ -7,7 +7,8 @@ Each rule looks at :class:`~prahari.services.state.OutletState` and returns the 
 * a condition that still holds updates its alert (an acknowledged alert stays acknowledged);
 * an alert whose condition has cleared is resolved and kept as history.
 
-Keys are stable (``dry:GGN-104``, ``lic:PESO:GGN-131`` ...) so the same condition never opens twice.
+Keys are stable (``dry:GGN-104:HSD``, ``den:GGN-109:INV123``, ``lic:PESO:GGN-131`` ...), so the
+same condition never opens twice.
 Runs are serialised with a PostgreSQL advisory lock, so several API workers can't race.
 """
 
@@ -26,11 +27,12 @@ from prahari.config import RuleThresholds, Settings
 from prahari.domain.products import PRODUCT_NAMES
 from prahari.domain.time import now_utc
 from prahari.models import Alert
-from prahari.models.ops import ALERT_OPEN, ALERT_RESOLVED
+from prahari.models.ops import ALERT_ACKNOWLEDGED, ALERT_OPEN, ALERT_RESOLVED
 from prahari.services.state import OutletState, compute_states
 
 log = logging.getLogger(__name__)
 _LOCK_ID = 7_301_104  # arbitrary, unique to the rules engine
+SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 LICENCE_LABELS = {
     "PESO": "PESO storage licence",
     "LM_STAMPING": "Legal Metrology stamping",
@@ -62,50 +64,53 @@ def _hours(days: float) -> str:
 # Rules: each takes one outlet's state and the thresholds and yields AlertSpecs
 # --------------------------------------------------------------------------------------------
 def rule_supply(st: OutletState, th: RuleThresholds) -> Iterable[AlertSpec]:
-    """Dry-out risk (no fuel coming) or low stock with fuel on its way."""
-    worst = st.min_cover
-    if worst is None or worst.days_cover is None or worst.days_cover >= th.dry_out_days:
-        return
-    o, p = st.outlet, worst.product
-    name = PRODUCT_NAMES.get(p, p)
-    stock_kl = (worst.stock_l or 0) / 1000
-    data = {
-        "product": p,
-        "days_cover": round(worst.days_cover, 2),
-        "stock_l": round(worst.stock_l or 0),
-        "estimated": worst.estimated,
-    }
-    covering = st.covering_indent(p)
-    if covering is None:
-        held = st.held_indent(p)
-        reason = (
-            f" The order is on hold: {held.hold_reason.lower()}."
-            if held and held.hold_reason
-            else (" The order is on hold." if held else " No order has been placed.")
-        )
-        yield AlertSpec(
-            f"dry:{o.code}",
-            "dry",
-            "critical",
-            "Supply",
-            o.id,
-            f"Dry-out risk: {name} at {o.name}",
-            f"{_hours(worst.days_cover)} of {name.lower()} left ({stock_kl:.1f} kL).{reason}",
-            {**data, "held_indent": held.indent_no if held else None},
-        )
-    else:
-        yield AlertSpec(
-            f"low:{o.code}",
-            "low",
-            "low",
-            "Supply",
-            o.id,
-            f"Low {name.lower()} at {o.name}, delivery {covering.status.lower()}",
-            f"{_hours(worst.days_cover)} left ({stock_kl:.1f} kL). Indent {covering.indent_no} "
-            f"for {covering.qty_kl:g} kL is {covering.status.lower()}"
-            f"{' on ' + covering.tt_no if covering.tt_no else ''}.",
-            {**data, "indent": covering.indent_no},
-        )
+    """Per product: dry-out risk (no fuel coming) or low stock with fuel on its way.
+
+    Each product is judged on its own, so diesel running dry is never hidden behind petrol that
+    is merely low with a truck on the way.
+    """
+    o = st.outlet
+    for ps in st.products.values():
+        if ps.days_cover is None or ps.days_cover >= th.dry_out_days:
+            continue
+        p, name = ps.product, PRODUCT_NAMES.get(ps.product, ps.product)
+        stock_kl = (ps.stock_l or 0) / 1000
+        data = {
+            "product": p,
+            "days_cover": round(ps.days_cover, 2),
+            "stock_l": round(ps.stock_l or 0),
+            "estimated": ps.estimated,
+        }
+        covering = st.covering_indent(p)
+        if covering is None:
+            held = st.held_indent(p)
+            if held and held.hold_reason:
+                reason = f" The order is on hold: {held.hold_reason.lower()}."
+            else:
+                reason = " The order is on hold." if held else " No order has been placed."
+            yield AlertSpec(
+                f"dry:{o.code}:{p}",
+                "dry",
+                "critical",
+                "Supply",
+                o.id,
+                f"Dry-out risk: {name} at {o.name}",
+                f"{_hours(ps.days_cover)} of {name.lower()} left ({stock_kl:.1f} kL).{reason}",
+                {**data, "held_indent": held.indent_no if held else None},
+            )
+        else:
+            yield AlertSpec(
+                f"low:{o.code}:{p}",
+                "low",
+                "low",
+                "Supply",
+                o.id,
+                f"Low {name.lower()} at {o.name}, delivery {covering.status.lower()}",
+                f"{_hours(ps.days_cover)} left ({stock_kl:.1f} kL). Indent {covering.indent_no} "
+                f"for {covering.qty_kl:g} kL is {covering.status.lower()}"
+                f"{' on ' + covering.tt_no if covering.tt_no else ''}.",
+                {**data, "indent": covering.indent_no},
+            )
 
 
 def rule_variation(st: OutletState, th: RuleThresholds) -> Iterable[AlertSpec]:
@@ -127,13 +132,16 @@ def rule_variation(st: OutletState, th: RuleThresholds) -> Iterable[AlertSpec]:
 
 
 def rule_density(st: OutletState, th: RuleThresholds) -> Iterable[AlertSpec]:
+    """One alert per failed delivery (invoice), so each is held and acknowledged on its own."""
     o = st.outlet
-    flagged = [r for r in st.receipts if abs(r.density_diff) > th.density_tolerance and not r.quality_hold]
-    if flagged:
-        r = flagged[0]  # newest first
+    seen: set[str] = set()
+    for r in st.receipts:  # newest first
+        if r.invoice_no in seen or abs(r.density_diff) <= th.density_tolerance or r.quality_hold:
+            continue
+        seen.add(r.invoice_no)
         name = PRODUCT_NAMES.get(r.product_code, r.product_code).lower()
         yield AlertSpec(
-            f"den:{o.code}",
+            f"den:{o.code}:{r.invoice_no}",
             "den",
             "high",
             "Quality",
@@ -237,6 +245,11 @@ def run_rules(session: Session, settings: Settings, *, at: datetime | None = Non
             spec.severity,
             spec.data,
         ):
+            if (
+                SEVERITY_RANK[spec.severity] < SEVERITY_RANK[alert.severity]
+                and alert.status == ALERT_ACKNOWLEDGED
+            ):
+                alert.status, alert.acknowledged_at = ALERT_OPEN, None  # got worse: needs attention again
             alert.title, alert.detail, alert.severity, alert.data = (
                 spec.title,
                 spec.detail,

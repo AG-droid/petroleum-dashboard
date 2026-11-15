@@ -101,9 +101,12 @@
     });
   }
 
+  // Server keys carry detail the dashboard groups by outlet: dry:GGN-104:HSD → dry:GGN-104,
+  // den:GGN-109:INV123 → den:GGN-109, lic:PESO:GGN-131 → lic:peso:GGN-131.
   function clientKey(a) {
-    if (a.rule === 'lic') { const [, type, code] = a.key.split(':'); return `lic:${LIC_KEY[type] || type}:${code}`; }
-    return a.key;
+    const parts = a.key.split(':');
+    if (a.rule === 'lic') return `lic:${LIC_KEY[parts[1]] || parts[1]}:${parts[2]}`;
+    return parts.slice(0, 2).join(':');
   }
 
   function applyAlerts(list) {

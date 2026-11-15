@@ -25,7 +25,8 @@ def test_snapshot_has_everything_the_dashboard_needs(client: TestClient) -> None
     assert rss["min_cover_product"] == "HSD" and rss["min_days_cover"] < 1.5
     assert any(i["status"] == "On hold" for i in rss["indents"])
     assert len(rss["history"]) == 30 and {t["source"] for t in rss["tanks"]} == {"dip_register"}
-    assert {a["key"] for a in snap["alerts"]} >= {"dry:GGN-104", "den:GGN-109"}
+    keys = {a["key"] for a in snap["alerts"]}
+    assert "dry:GGN-104:HSD" in keys and any(k.startswith("den:GGN-109:") for k in keys)
 
 
 def test_outlet_detail_and_404(client: TestClient) -> None:
@@ -37,14 +38,14 @@ def test_priority_indent_endpoint(client: TestClient) -> None:
     r = client.post("/api/v1/outlets/GGN-104/priority-indent", json={"note": "dry-out"})
     assert r.status_code == 201 and r.json()["product_code"] == "HSD"
     keys = {a["key"] for a in client.get("/api/v1/alerts").json()}
-    assert "dry:GGN-104" not in keys and "low:GGN-104" in keys
+    assert "dry:GGN-104:HSD" not in keys and "low:GGN-104:HSD" in keys
     assert client.post("/api/v1/outlets/GGN-104/priority-indent", json={"product": "XP"}).status_code == 409
 
 
 def test_quality_hold_endpoint(client: TestClient) -> None:
     rid = client.get("/api/v1/outlets/GGN-109").json()["receipts"][0]["id"]
     assert client.post(f"/api/v1/receipts/{rid}/quality-hold").json()["quality_hold"] is True
-    assert "den:GGN-109" not in {a["key"] for a in client.get("/api/v1/alerts").json()}
+    assert not any(a["key"].startswith("den:GGN-109:") for a in client.get("/api/v1/alerts").json())
 
 
 def test_acknowledge(client: TestClient) -> None:
