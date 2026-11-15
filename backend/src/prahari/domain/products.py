@@ -3,8 +3,8 @@
 Exports name the same fuel in different ways ("MS", "Petrol", "MS-R", "Diesel", "HSD"). Every
 importer normalises through :func:`normalise_product` so the rest of the system sees one code.
 
-Internal codes and names are brand-neutral. Oil-company brand labels (e.g. IOCL's XP95, XP100,
-XG) are accepted as aliases so their exports import unchanged, but never shown as our own names.
+Internal codes and names are brand-neutral. Brand labels found in MIS exports (such as XP95,
+XP100, XG) are accepted as aliases so those exports import unchanged, but never shown as our own.
 """
 
 from __future__ import annotations

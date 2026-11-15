@@ -49,8 +49,12 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Gas products have no density; the old schema can't hold them.
-    op.execute("DELETE FROM product WHERE density_min IS NULL OR density_max IS NULL")
+    # The old schema requires density bounds. Gas products have none and may be referenced by
+    # tanks, nozzles or indents, so they get placeholder bounds (never used: no density check
+    # applies to gases) rather than being deleted.
+    op.execute(
+        "UPDATE product SET density_min = 0, density_max = 0 WHERE density_min IS NULL OR density_max IS NULL"
+    )
     op.alter_column("product", "density_max", existing_type=sa.Float(), nullable=False)
     op.alter_column("product", "density_min", existing_type=sa.Float(), nullable=False)
     op.drop_column("product", "unit")

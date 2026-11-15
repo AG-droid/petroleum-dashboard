@@ -1,6 +1,6 @@
 """How the oil company identifies and classifies retail outlets.
 
-Vocabulary follows the oil companies' own systems (seen in IOCL's dealer analytics exports):
+Vocabulary is modelled on oil-company MIS conventions (not an official specification):
 
 - **RO code**: every retail outlet (RO) has a 6-digit numeric code. It is the key that SAP
   invoices, automation data and every MIS report use, so it is Prahari's outlet key too.

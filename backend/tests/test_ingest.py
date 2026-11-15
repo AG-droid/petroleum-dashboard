@@ -278,3 +278,97 @@ def test_product_master_accepts_gases_without_density(session: Session) -> None:
     units = dict(session.execute(select(Product.code, Product.unit)).tuples().all())
     assert units["CNG"] == "kg" and units["MS"] == "L"
     assert session.scalar(select(Product.density_min).where(Product.code == "CNG")) is None
+
+
+def _ro_master(path: Path, rows: list[list[object]]) -> Path:
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    assert ws is not None
+    ws.append(list(FORMATS[FileKind.RO_MASTER].columns))
+    for r in rows:
+        ws.append(r)
+    wb.save(path)
+    return path
+
+
+def _ro_row(ro: str, sap: str, market: str = "B-Urban") -> list[object]:
+    return [
+        ro,
+        sap,
+        "Outlet " + ro,
+        "Gurugram",
+        market,
+        "DODO",
+        "N",
+        "Sector 1",
+        "",
+        "",
+        28.45,
+        77.03,
+        "Y",
+        300,
+        "Test Dealer",
+        "",
+        2001,
+    ]
+
+
+def test_sap_code_clashes_are_row_errors(session: Session, settings: Settings, tmp_path: Path) -> None:
+    """Same SAP code on two new rows, or one already held by another outlet: row errors only."""
+    taken = session.scalar(select(Outlet.sap_code).where(Outlet.code == "990101"))
+    assert taken
+    path = _ro_master(
+        tmp_path / "ro.xlsx",
+        [_ro_row("990901", "S-9"), _ro_row("990902", "S-9"), _ro_row("990903", taken), _ro_row("990904", "")],
+    )
+    job = import_file(session, path, settings)
+    assert (job.rows_accepted, job.rows_rejected) == (2, 2)
+    errors = {e["row"]: e["message"] for e in job.errors or []}
+    assert errors[3] == "duplicate of row 2" and "already belongs to RO 990101" in errors[4]
+
+
+def test_ro_master_reimport_updates_the_outlet_matched_on_ro_code(
+    session: Session, settings: Settings, tmp_path: Path
+) -> None:
+    import_file(session, _ro_master(tmp_path / "a.xlsx", [_ro_row("990905", "S-5", "C-Urban")]), settings)
+    import_file(session, _ro_master(tmp_path / "b.xlsx", [_ro_row("990905", "S-6", "D2-Highway")]), settings)
+    rows = list(session.scalars(select(Outlet).where(Outlet.code == "990905")))
+    assert len(rows) == 1 and (rows[0].sap_code, rows[0].market_class) == ("S-6", "D2-Highway")
+
+
+def test_sales_area_json_accepts_old_division_key_and_checks_densities(
+    session: Session, settings: Settings, tmp_path: Path
+) -> None:
+    import json
+
+    from prahari.models import SalesArea
+
+    def doc(products: list[dict[str, object]]) -> Path:
+        p = tmp_path / "SALES_AREA.json"
+        p.write_text(
+            json.dumps(
+                {
+                    "kind": "sales_area",
+                    "code": "T-RSA",
+                    "name": "Test RSA",
+                    "division": "Test DO",
+                    "products": products,
+                }
+            )
+        )
+        return p
+
+    gas = {"code": "CNG", "name": "CNG", "unit": "kg", "price_per_l": 76}
+    job = import_file(session, doc([gas]), settings)
+    assert job.status == "succeeded"
+    area = session.scalar(select(SalesArea).where(SalesArea.code == "T-RSA"))
+    assert area is not None and area.divisional_office == "Test DO"
+
+    for bad in (
+        {"code": "MS", "name": "Petrol", "price_per_l": 95},  # liquid without density
+        {"code": "MS", "name": "Petrol", "price_per_l": 95, "density_min": 770, "density_max": 730},
+    ):
+        job = import_file(session, doc([bad]), settings, force=True)
+        assert job.status == "failed"

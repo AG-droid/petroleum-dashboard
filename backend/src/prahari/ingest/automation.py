@@ -39,7 +39,9 @@ class NozzleTotal(BaseModel):
 class SiteSnapshot(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
 
-    site_id: str = Field(pattern=r"^\d{6}$", description="The outlet's 6-digit RO code.")
+    # Only bounded here: an ID that isn't a known RO code is reported for that site alone (see
+    # store_batch), so one bad site never drops the other sites' readings in the batch.
+    site_id: str = Field(min_length=1, max_length=16, description="The outlet's 6-digit RO code.")
     observed_at: AwareDatetime
     tanks: list[TankLevel] = Field(default_factory=list, max_length=20)
     nozzles: list[NozzleTotal] = Field(default_factory=list, max_length=64)

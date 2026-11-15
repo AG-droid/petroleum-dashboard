@@ -263,6 +263,9 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
     if not areas:
         return ImportResult(total=len(table.rows), errors=[RowError(0, None, "import SALES_AREA.json first")])
     existing = {o.code: o for o in session.scalars(select(Outlet))}
+    # The SAP code is unique too: a code already held by another outlet is a row error, not a
+    # database error that would reject the whole file.
+    sap_owner = {o.sap_code: o.code for o in existing.values() if o.sap_code}
 
     def area_id(values: dict[str, Any]) -> int:
         name = _get(values, "SALES_AREA", parse.text).lower()
@@ -275,9 +278,13 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
         ownership = _get(v, "RO_TYPE", parse.text).upper()
         if ownership not in {"DODO", "CODO", "COCO"}:
             raise _CellError("RO_TYPE", f"RO_TYPE {ownership!r} must be DODO, CODO or COCO")
+        code = _get(v, RO, parse.ro_code)
+        sap = _get(v, "SAP_CUST_CODE", parse.optional_code, max_len=16)
+        if sap and sap_owner.get(sap, code) != code:
+            raise _CellError("SAP_CUST_CODE", f"SAP_CUST_CODE {sap} already belongs to RO {sap_owner[sap]}")
         return {
-            "code": _get(v, RO, parse.ro_code),
-            "sap_code": _get(v, "SAP_CUST_CODE", parse.optional_code, max_len=16),
+            "code": code,
+            "sap_code": sap,
             "name": _get(v, "RO_NAME", parse.text, max_len=120),
             "sales_area_id": area_id(v),
             "market_class": _get(v, "CLASS_OF_MARKET", parse.market_class),

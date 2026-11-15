@@ -29,6 +29,7 @@ from zoneinfo import ZoneInfo
 
 from openpyxl import Workbook
 
+from prahari.config import RuleThresholds
 from prahari.domain.calibration import dip_from_volume, standard_dimensions, volume_from_dip
 from prahari.domain.products import CBG, CNG, E85, E100, HSD, MS, P100, PD, PRODUCT_NAMES
 from prahari.domain.time import business_date, business_day_start
@@ -83,7 +84,7 @@ COVERED_MORNING_COVER_DAYS = 1.1  # the "truck on the way" story outlet's petrol
 # Every other outlet starts the day with at least this much fuel: the dry-out threshold (1.5 days)
 # plus a full day of sales, so routine outlets never drift into a supply alert by late evening and
 # only the storylines raise one, whatever the time of day.
-ROUTINE_MIN_MORNING_COVER_DAYS = 2.6
+ROUTINE_MIN_MORNING_COVER_DAYS = RuleThresholds().dry_out_days + 1.1
 SHORTAGES_L = (0, 0, 0, 0, 0, 5, 10, 15, 25, 40)  # typical transit shortages, mostly none
 LICENCE_TYPES = {"peso": "PESO", "stamp": "LM_STAMPING", "fire": "FIRE_NOC", "pcc": "PCB_CONSENT"}
 DENSITY_COEFF = {MS: 0.9, HSD: 0.65}  # kg/m³ per °C (approximate thermal correction)
@@ -110,14 +111,13 @@ class _OutletPlan:
     tanks: list[dict[str, Any]]
     nozzles: list[dict[str, Any]]
     sales_l: dict[date, dict[str, float]] = field(default_factory=dict)  # product net sales per day
+    stock_l: dict[date, dict[str, float]] = field(default_factory=dict)  # product stock each morning
+    receipts: list[_Receipt] = field(default_factory=list)
 
     @property
     def ro(self) -> str:
         """The 6-digit RO code: the key in every generated file."""
         return str(self.world["code"])
-
-    stock_l: dict[date, dict[str, float]] = field(default_factory=dict)  # product stock each morning
-    receipts: list[_Receipt] = field(default_factory=list)
 
 
 def generate(

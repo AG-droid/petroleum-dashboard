@@ -20,6 +20,8 @@ def test_health(client: TestClient) -> None:
 def test_snapshot_has_everything_the_dashboard_needs(client: TestClient) -> None:
     snap = client.get("/api/v1/ui/snapshot").json()
     assert snap["area"]["code"] == "GGN-RSA" and len(snap["area"]["boundary"]) > 3
+    assert snap["area"]["divisional_office"] and snap["area"]["state_office"]
+    assert {o["market_class"] for o in snap["outlets"]} >= {"A-Urban", "D1-Highway", "E-Rural"}
     assert len(snap["outlets"]) == 44
     rss = next(o for o in snap["outlets"] if o["code"] == "990104")
     assert rss["min_cover_product"] == "HSD" and rss["min_days_cover"] < 1.5
@@ -105,6 +107,21 @@ def test_automation_rejects_unknown_references(client: TestClient) -> None:
         json={"snapshots": [{"site_id": "x", "observed_at": "2026-11-15T10:00:00", "tanks": []}]},
     )
     assert bad.status_code == 422  # timestamps must carry a time zone
+
+
+def test_one_malformed_site_does_not_drop_the_batch(client: TestClient) -> None:
+    """A site ID that isn't an RO code is reported for that site; the others still load."""
+    good = client.get("/api/v1/outlets/990101").json()
+    snaps = [
+        {"site_id": "GGN-101", "observed_at": "2026-11-15T10:00:00+05:30", "tanks": []},
+        {
+            "site_id": "990101",
+            "observed_at": "2026-11-15T10:00:00+05:30",
+            "tanks": [{"tank_no": good["tanks"][0]["tank_no"], "volume_l": 1000}],
+        },
+    ]
+    r = client.post("/api/v1/ingest/automation", json={"snapshots": snaps}).json()
+    assert r["sites_accepted"] == 1 and r["rejected"] == ["GGN-101: unknown site"]
 
 
 def test_state_changing_requests_need_the_app_header(client: TestClient) -> None:

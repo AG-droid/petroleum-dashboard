@@ -7,9 +7,13 @@ import logging
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from prahari.config import get_settings
 from prahari.logconfig import configure_logging
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 log = logging.getLogger("prahari")
 DEFAULT_SAMPLES = Path("sample-data")
@@ -66,6 +70,21 @@ def _rules(_: argparse.Namespace) -> int:
     return 0
 
 
+def _pre_ro_code_outlets(session: Session) -> str | None:
+    """The first outlet whose code is not a 6-digit RO code (demo data from an older version)."""
+    from sqlalchemy import select
+
+    from prahari.domain.outlets import normalise_ro_code
+    from prahari.models import Outlet
+
+    for code in session.scalars(select(Outlet.code)):
+        try:
+            normalise_ro_code(code)
+        except ValueError:
+            return code
+    return None
+
+
 def _seed_demo(args: argparse.Namespace) -> int:
     """Generate today's sample files and import them: the one-step demo setup.
 
@@ -79,6 +98,14 @@ def _seed_demo(args: argparse.Namespace) -> int:
     from prahari.samples.reset import start_new_demo_day_if_needed
 
     s = get_settings()
+    with session_scope() as session:
+        if stale := _pre_ro_code_outlets(session):
+            log.error(
+                "the database holds outlets from before RO codes (e.g. %s); demo data can't be "
+                "merged into it. Run `make reset` to start again with RO codes.",
+                stale,
+            )
+            return 1
     args.as_of, args.paths = None, [args.out]
     if rc := _generate(args):
         return rc

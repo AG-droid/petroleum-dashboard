@@ -243,3 +243,16 @@ def test_lock_timeout_keeps_the_users_action(session: Session, settings: Setting
         assert summary.skipped
         session.flush()  # the transaction is still usable
         assert session.scalar(select(AuditLog).where(AuditLog.action == "alert.acknowledge")) is not None
+
+
+def test_only_the_storylines_are_loud_at_any_hour(session: Session, settings: Settings) -> None:
+    """Pinned late in the business day, routine outlets still raise no supply alert."""
+    from prahari.domain.time import business_day_start
+
+    today = business_date(datetime.now(UTC), settings.tz, settings.business_day_start_hour)
+    late = business_day_start(today, settings.tz, settings.business_day_start_hour) + timedelta(
+        hours=23, minutes=50
+    )
+    run_rules(session, settings, at=late)
+    supply = {_short(k) for k in _active(session) if k.startswith(("dry:", "low:"))}
+    assert supply <= {"dry:990104:HSD", "low:990114:MS"}
