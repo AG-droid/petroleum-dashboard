@@ -42,7 +42,7 @@
       if (s < 86400) return Math.round(s / 3600) + ' h ago';
       return Math.round(s / 86400) + ' d ago';
     },
-    dur(days) { const h = days * 24; return h < 36 ? `about ${Math.max(1, Math.round(h))} hours` : `about ${days.toFixed(1)} days`; },
+    dur(days) { const h = days * 24; return h < 1.5 ? 'less than 2 hours' : h < 36 ? `about ${Math.round(h)} hours` : `about ${days.toFixed(1)} days`; },
   };
   const achCls = (a) => (a < 0.85 ? 'c-crit' : a < 0.95 ? 'c-warn' : '');
   const coverCls = (d) => (d < 1 ? 'c-crit' : d < 2 ? 'c-warn' : '');
@@ -249,6 +249,12 @@
     bindActs(body);
     const sa = $('#seeAll'); if (sa) sa.onclick = () => { UI.state.lpTab = 'alerts'; UI.state.lastAlertVer = -1; updateLeft(); };
   }
+  // Re-render panels after data changed outside the 1-second tick (e.g. a backend refresh).
+  UI.refresh = function () {
+    UI.state.lastAlertVer = -1; UI.state.headSig = '';
+    updateLeft();
+    if (UI.state.selected) { renderOutletHead(DB.byId(UI.state.selected)); renderTab(); }
+  };
   function bindActs(root) {
     $$('[data-act]', root).forEach((b) => { b.onclick = (e) => { e.stopPropagation(); doAction(b.dataset.act, b.dataset.id); }; });
   }
@@ -256,6 +262,7 @@
     if (act === 'driver') { const t = DB.tankerById(id); Sim.actions.contactDriver(t); toast(`Driver of ${t.plate} contacted`, 'Truck is back on its planned route. Incident logged.', 'ok'); }
     if (act === 'dispatch') { const o = DB.byId(id); const t = Sim.actions.priorityDispatch(o); toast(`Truck ${t.plate} assigned to ${o.name}`, `Loading at ${DB.depotById(t.depotId).name}. Dealer asked to clear payment.`, 'ok'); }
     if (act === 'hold') { const o = DB.byId(id); Sim.actions.holdTank(o); toast('Tank held and sample requested', `${o.name}: quality team notified`, 'ok'); }
+    if (act === 'ra' && window.Api && Api.connected) { const o = DB.byId(id); toast('Restart requested', `${o.name}: the dealer has been asked to restart the automation controller. The status updates when data arrives.`, 'ok'); return; }
     if (act === 'ra') { const o = DB.byId(id); toast('Reconnecting…', `Trying the backup 4G link at ${o.name}`); setTimeout(() => { Sim.actions.resetRA(o); toast('Automation link restored', o.name, 'ok'); }, 2000); }
     UI.state.lastAlertVer = -1; UI.state.headSig = '';
     setTimeout(() => { updateLeft(); if (UI.state.selected) { renderOutletHead(DB.byId(UI.state.selected)); if (UI.state.tab === 'supply') renderTab(); } }, 60);
@@ -412,7 +419,7 @@
     body.innerHTML = `
       ${o.competitorNote ? `<div class="callout warn">${o.competitorNote}.</div>` : ''}
       ${!o.raOnline ? `<div class="callout crit">Figures below are from the last sync at ${fmt.hm(Sim.raLastSync)}.</div>` : ''}
-      <div class="section"><div class="sh"><h4>Tanks</h4><span class="aside">live from tank gauges</span></div><div id="ovTanks"></div></div>
+      <div class="section"><div class="sh"><h4>Tanks</h4><span class="aside">${window.Api ? Api.tankNote(o) : 'simulated tank gauges'}</span></div><div id="ovTanks"></div></div>
       <div class="section"><div class="sh"><h4>Pumps</h4><span class="aside" id="ovNozA"></span></div><div class="nozzles" id="ovNoz"></div></div>
       <div class="section"><div class="sh"><h4>Recent sales</h4><span class="aside" id="ovTodayA"></span></div><div id="ovTx"></div></div>
       <div class="section"><div class="sh"><h4>Camera</h4><span class="aside text-btn" id="ovAllCams">All ${o.cameras.length} cameras</span></div>

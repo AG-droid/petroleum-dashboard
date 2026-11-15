@@ -83,7 +83,10 @@
     const a = Sim.alerts.find((x) => x.key === key && x.status !== 'resolved');
     if (a) { a.status = 'resolved'; Sim.alertsVersion++; Sim.alerts = Sim.alerts.filter((x) => x !== a); pushEvent('ok', `Resolved: ${a.title}`, a.outletId); }
   }
-  function rule(cond, key, data) { if (cond) upsert(key, data); else resolve(key); }
+  function rule(cond, key, data) {
+    if (Sim.serverOwned && Sim.serverOwned(key)) return; // the backend raises and resolves these
+    if (cond) upsert(key, data); else resolve(key);
+  }
 
   function evaluate() {
     outlets.forEach((o) => {
@@ -304,7 +307,8 @@
       if (!o.raOnline) return;
       Object.keys(o.prod).forEach((p) => {
         const L = o.prod[p] * 1000 * perSec * rr(0.6, 1.4);
-        o.today[p] += L;
+        if (!o._serverToday) o.today[p] += L; // with a backend, live sales come from pump totalisers
+        if (o._serverStock) return; // ...and stock from tank readings
         const tanks = o.tanks.filter((t) => t.product === p && t.stock > 0.05);
         if (tanks.length) { const tk = tanks.sort((a, b) => b.stock - a.stock)[0]; tk.stock = Math.max(0, tk.stock - L / 1000); }
       });
@@ -359,7 +363,8 @@
     Sim.baseBroken = outlets.filter((q) => q.cameras.some((c) => !c.online) || q.nozzles.some((n) => n.status === 'Fault')).length;
     outlets.forEach(compute);
     evaluate();
-    Sim.alerts.forEach((a) => { a.fresh = false; a.ts = Date.now() - Math.floor(rnd() * 3 * 3600 * 1000); });
+    // Demo alerts get plausible "opened" times; alerts from the backend keep their real ones.
+    Sim.alerts.forEach((a) => { a.fresh = false; if (!a.server) a.ts = Date.now() - Math.floor(rnd() * 3 * 3600 * 1000); });
     Sim.alerts.sort((a, b) => b.ts - a.ts);
     // seed a few events
     for (let i = 0; i < 6; i++) { const o = pick(outlets); const [tag, fn] = pick(AI_TEXT); Sim.aiEvents.push({ ts: Date.now() - i * 95000, outletId: o.id, camId: o.cameras[0].id, tag, text: fn(o) }); }
