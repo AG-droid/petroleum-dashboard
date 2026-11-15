@@ -1,0 +1,20 @@
+# Serves the dashboard and proxies the API on one origin (no CORS needed in the browser).
+:8080 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+}

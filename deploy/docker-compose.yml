@@ -1,0 +1,72 @@
+# Prahari local stack:  docker compose -f deploy/docker-compose.yml up -d --build   (or: make up)
+#
+#   db       PostgreSQL 16 + TimescaleDB         (data in the "pgdata" volume)
+#   migrate  one-shot: schema migrations, then today's sample data generated and imported
+#   api      FastAPI backend + rules engine      (http://localhost:8080/api/docs)
+#   feed     demo automation feed: posts tank-gauge and pump readings to the API
+#   web      Caddy: serves the dashboard and proxies /api  → http://localhost:8080
+name: prahari
+
+x-backend: &backend
+  build: ../backend
+  image: prahari-backend:dev
+  environment: &backend-env
+    PRAHARI_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prahari}:${POSTGRES_PASSWORD:-prahari}@db:5432/${POSTGRES_DB:-prahari}
+    PRAHARI_ENV: development
+  volumes:
+    - samples:/data/samples
+
+services:
+  db:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-prahari}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prahari}
+      POSTGRES_DB: ${POSTGRES_DB:-prahari}
+      TIMESCALEDB_TELEMETRY: "off"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"  # for local tools and tests; never exposed beyond this laptop
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *backend
+    command: ["sh", "-c", "prahari db-upgrade && prahari seed-demo --out /data/samples"]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    <<: *backend
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  feed:
+    <<: *backend
+    command: ["prahari", "feed", "--api", "http://api:8000", "--state", "/data/samples/feed_state.json", "--interval", "${FEED_INTERVAL:-30}"]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck: { disable: true }
+    restart: unless-stopped
+
+  web:
+    image: caddy:2.8.4-alpine
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../poc:/srv:ro
+    ports:
+      - "${PRAHARI_BIND:-127.0.0.1}:${PRAHARI_PORT:-8080}:8080"
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  samples:
