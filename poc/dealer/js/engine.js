@@ -314,6 +314,7 @@
   function release(o) {
     const ro = W.byId(o.roId);
     Object.assign(o, plan(ro, Eng.now));
+    o.releasedTs = Eng.now;
     o.status = 'placed';
     log(`${o.id} released to the supply point; loading from ${fmtHM(o.loadStartTs)}`, ro.id, 'ok');
   }

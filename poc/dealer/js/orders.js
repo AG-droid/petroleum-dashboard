@@ -42,45 +42,6 @@
     })[o.status];
   }
 
-  // ---------- Orders view ----------
-  DUI.view('orders', {
-    render() {
-      const ros = DUI.scopeRos();
-      const money = Eng.money();
-      const pipe = [];
-      const sugg = [];
-      ros.forEach((ro) => {
-        const m = Eng.metrics(ro);
-        ro.products.forEach((p, i) => {
-          const pm = m.byP[p];
-          pipe.push(`<tr><td class="l">${i === 0 ? `<b style="font-weight:600">${esc(ro.name)}</b><span class="sub-id">${esc(ro.id)}</span>` : ''}</td><td><span class="pname"><i style="background:${PCOLOR[p]}"></i>${esc(pname(p))}</span></td>
-            <td class="r">${esc(fmt.L(pm.usableL))}</td><td class="r">${pm.pendingL ? esc(fmt.L(pm.pendingL)) : '—'}</td><td class="r">${pm.onWheelsL ? esc(fmt.L(pm.onWheelsL)) : '—'}</td>
-            <td class="r ${pm.dryTs && pm.dryTs - Eng.now < 86400000 ? 'c-crit' : ''}">${esc(fmt.when(pm.dryTs))}</td><td class="r ${pm.dryWithOrdersTs && pm.dryWithOrdersTs - Eng.now < 86400000 ? 'c-crit' : ''}">${pm.incoming.length ? esc(fmt.when(pm.dryWithOrdersTs)) : '—'}</td></tr>`);
-        });
-        const open = W.orders.some((o) => o.roId === ro.id && (o.status === 'awaiting_payment' || o.status === 'placed'));
-        const s = !open && Eng.suggest(ro);
-        if (s && m.soonest && m.soonest.dryWithOrdersTs - Eng.now < 4 * 86400000) {
-          sugg.push(`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div class="card-title">Suggested for ${esc(ro.name)}</div>
-            <div class="card-sub" style="margin-bottom:6px">${esc(lineText(s.lines))} on a ${s.truckKL} KL truck · ${esc(fmt.inr(s.value))}</div>
-            <div class="muted" style="font-size:12.5px">${esc(pname(m.soonest.p))} runs dry ${esc(fmt.when(m.soonest.dryWithOrdersTs))}. Ordered now it arrives ${esc(fmt.when(s.plan.usableTs))} and leaves about ${C.targetCoverDays} days of cover.</div>
-            ${s.notes.length ? `<div class="faint" style="font-size:12px;margin-top:4px">${s.notes.map(esc).join(' ')}</div>` : ''}</div>
-            <button class="btn primary sm" data-neworder="${esc(ro.id)}">Review and order</button></div></div>`);
-        }
-      });
-      const list = W.orders.filter((o) => DUI.inScope(o.roId));
-      return `<div class="page">
-        <div class="page-head"><div class="grow"><h1 class="page-title">Orders and supply</h1><div class="page-sub">Available balance ${esc(fmt.inrFull(money.available))}${money.pending ? ` · ${esc(fmt.inrFull(money.pending))} waiting for credit` : ''}</div></div>${DUI.asOf()}
-          <button class="btn sm" data-pay="0">${I.plus} Add money</button><button class="btn primary sm" data-neworder="">${I.truck} New order</button></div>
-        ${sugg.length ? `<div class="stack">${sugg.join('')}</div>` : ''}
-        <div class="card flush mt"><div class="card-head"><h3>Supply pipeline</h3><span class="aside">Usable stock, what's ordered and what's on the road</span></div>
-          <div class="card-body table-scroll"><table class="t"><thead><tr><th>Outlet</th><th>Product</th><th class="r">Usable stock</th><th class="r">Ordered, not loaded</th><th class="r">Loaded / on the road</th><th class="r">Runs dry without orders</th><th class="r">With orders</th></tr></thead><tbody>${pipe.join('')}</tbody></table></div></div>
-        <div class="card flush mt"><div class="card-head"><h3>All orders</h3><span class="aside">${list.length} in the last month</span></div>
-          <div class="card-body table-scroll"><table class="t"><thead><tr><th>Order</th><th>Outlet</th><th>Load</th><th class="r">Value</th><th>Placed</th><th>Status</th><th>Next</th></tr></thead><tbody>
-          ${list.map((o) => `<tr class="row" data-order="${esc(o.id)}"><td class="l mono">${esc(o.id)}</td><td>${esc(DUI.rname(o.roId))}</td><td>${esc(lineText(o.lines))}<span class="sub-id">${o.truckKL} KL truck</span></td><td class="r">${esc(fmt.inr(o.value))}</td><td>${esc(fmt.dt(o.createdTs))}</td><td><span class="status ${STATUS[o.status][1]}">${esc(STATUS[o.status][0])}</span></td><td class="faint">${esc(nextStep(o))}</td></tr>`).join('')}
-          </tbody></table></div></div></div>`;
-    },
-  });
-
   // ---------- New order ----------
   DUI.openOrder = function (roId) {
     const ros = DUI.scopeRos();
@@ -239,127 +200,12 @@
         <button class="btn ghost" data-close>Close</button></div>`);
     const b = (sel, fn) => { const el = $(sel, box); if (el) el.onclick = fn; };
     b('#dPay', () => DUI.openPay({ amount: Eng.stillToPay(o), orderId: o.id }));
-    b('#dTrack', () => { DUI.closeModal(); DUI.go('track', { selTruck: o.id }); });
+    b('#dTrack', () => { DUI.closeModal(); DUI.selectTruck(o.id); });
     b('#dRec', () => DUI.openReceipt(o.id));
     b('#dCancel', () => { const res = Eng.actions.cancelOrder(o.id); DUI.closeModal(); DUI.toast(res.error || `Order ${o.id} cancelled`); DUI.refresh(); });
   };
 
-  // ---------- Track ----------
-  const TRUCK_SVG = '<svg viewBox="0 0 24 24"><path d="M1 6h13v9H1zM14 9h4.5l3.5 3.5V15h-8zM5.5 19a2 2 0 100-4 2 2 0 000 4zM17.5 19a2 2 0 100-4 2 2 0 000 4z"/></svg>';
-  const T = { map: null, mk: {}, ready: false };
-  function truckPos(o) {
-    const ro = W.byId(o.roId);
-    const d = DB.depotById(o.depotId);
-    if (o.status === 'loading' || o.status === 'placed') return { lng: d.lng, lat: d.lat, seg: 0 };
-    if (o.status === 'in_transit') return DB.util.pointAt(ro.route, progress(o));
-    return { lng: ro.lng, lat: ro.lat, seg: ro.route.pts.length - 1 };
-  }
-  function routeGeo() {
-    const feats = [];
-    W.orders.filter((o) => ACTIVE.includes(o.status) && DUI.inScope(o.roId)).forEach((o) => {
-      const ro = W.byId(o.roId), pts = ro.route.pts, p = truckPos(o);
-      const here = [p.lng, p.lat];
-      feats.push({ type: 'Feature', properties: { k: 'done' }, geometry: { type: 'LineString', coordinates: pts.slice(0, (p.seg || 0) + 1).concat([here]) } });
-      feats.push({ type: 'Feature', properties: { k: 'ahead', sel: DUI.state.selTruck === o.id ? 1 : 0 }, geometry: { type: 'LineString', coordinates: [here].concat(pts.slice((p.seg || 0) + 1)) } });
-    });
-    return { type: 'FeatureCollection', features: feats };
-  }
-  function side() {
-    const act = W.orders.filter((o) => ACTIVE.includes(o.status) && DUI.inScope(o.roId));
-    const soon = W.orders.filter((o) => o.status === 'placed' && DUI.inScope(o.roId));
-    const recent = W.orders.filter((o) => (o.status === 'received' || o.status === 'awaiting_receipt' || o.status === 'claim_raised') && DUI.inScope(o.roId)).slice(0, 4);
-    return `<div class="p-title">Trucks for your outlets</div><div class="p-sub">${act.length ? `${act.length} on the move` : 'None on the road right now'} · positions every ${C.refresh.orders} min from the truck's GPS (simulated)</div>
-      ${act.map((o) => { const ro = W.byId(o.roId); return `<div class="truck-item ${DUI.state.selTruck === o.id ? 'sel' : ''}" data-sel="${esc(o.id)}"><div class="ti-title">${esc(o.truck.plate)} → ${esc(ro.name)}</div><div class="faint" style="font-size:12px;margin-top:2px">${esc(o.id)} · ${esc(lineText(o.lines))}</div>
-        <div class="progress"><i style="width:${Math.round(progress(o) * 100)}%"></i></div><div style="display:flex;justify-content:space-between;font-size:12px"><span class="status ${STATUS[o.status][1]}">${esc(STATUS[o.status][0])}</span><span>${esc(nextStep(o))}</span></div>
-        <div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm" data-call="${esc(o.id)}">${I.phone} Call driver</button><button class="btn ghost sm" data-order="${esc(o.id)}">Order details</button></div></div>`; }).join('') || `<div class="empty" style="text-align:left">Place an order, or speed up the demo clock (top bar) to watch a released order load and drive here on real roads.</div>`}
-      ${soon.length ? `<div class="sh" style="margin-top:18px"><h4>Waiting to load</h4></div>${soon.map((o) => `<div class="row-item" data-order="${esc(o.id)}" style="cursor:pointer"><div><b>${esc(o.id)}</b><small>${esc(DUI.rname(o.roId))} · loads ${esc(fmt.when(o.loadStartTs))}</small></div></div>`).join('')}` : ''}
-      ${recent.length ? `<div class="sh" style="margin-top:18px"><h4>Recent deliveries</h4></div>${recent.map((o) => `<div class="row-item" data-order="${esc(o.id)}" style="cursor:pointer"><div><b>${esc(o.id)} · ${esc(DUI.rname(o.roId))}</b><small>${esc(lineText(o.lines))} · ${esc(fmt.when(o.unloadedTs))}</small></div><span class="status ${STATUS[o.status][1]}">${esc(STATUS[o.status][0])}</span></div>`).join('')}` : ''}`;
-  }
-  function bindSide(v) {
-    DUI.bindCommon(v);
-    $$('[data-sel]', v).forEach((el) => { el.onclick = () => { DUI.state.selTruck = el.dataset.sel; const o = W.orderById(el.dataset.sel); const p = truckPos(o); if (T.map) T.map.flyTo({ center: [p.lng, p.lat], zoom: 13, duration: 900 }); update(v); }; });
-    $$('[data-call]', v).forEach((el) => { el.onclick = (e) => { e.stopPropagation(); const o = W.orderById(el.dataset.call); DUI.toast(`Calling ${o.truck.driver}`, `${o.truck.phone} · demo, no call is made`); }; });
-  }
-  function update(v) {
-    const s = $('.track-side', v);
-    if (s && !s.matches(':hover')) { s.innerHTML = side(); bindSide(s); }
-    if (!T.map || !T.ready) return;
-    const src = T.map.getSource('droutes');
-    if (src) src.setData(routeGeo());
-    const want = new Set();
-    W.orders.filter((o) => ACTIVE.includes(o.status) && DUI.inScope(o.roId)).forEach((o) => {
-      want.add(o.id);
-      const p = truckPos(o);
-      if (!T.mk[o.id]) {
-        const el = document.createElement('div');
-        el.className = 'mk mk-tanker';
-        el.innerHTML = TRUCK_SVG;
-        el.title = `${o.truck.plate} → ${DUI.rname(o.roId)}`;
-        el.onclick = () => { DUI.state.selTruck = o.id; update(v); };
-        const w = document.createElement('div'); w.appendChild(el);
-        T.mk[o.id] = { el, m: new maplibregl.Marker({ element: w }).setLngLat([p.lng, p.lat]).addTo(T.map) };
-      }
-      T.mk[o.id].m.setLngLat([p.lng, p.lat]);
-      T.mk[o.id].el.className = 'mk mk-tanker' + (o.status !== 'in_transit' ? ' idle' : '') + (DUI.state.selTruck === o.id ? ' sel' : '');
-    });
-    Object.keys(T.mk).forEach((id) => { if (!want.has(id)) { T.mk[id].m.remove(); delete T.mk[id]; } });
-  }
-  DUI.view('track', {
-    render() {
-      return `<div class="track-wrap"><div id="dmap" role="region" aria-label="Map of your outlets and trucks"></div><aside class="track-side">${side()}</aside></div>`;
-    },
-    mount(v) {
-      bindSide($('.track-side', v));
-      if (typeof maplibregl === 'undefined') { $('#dmap', v).innerHTML = '<div class="empty" style="padding:40px">The map library did not load. Check the connection and reload.</div>'; return; }
-      const esri = (p) => `https://server.arcgisonline.com/ArcGIS/rest/services/${p}/MapServer/tile/{z}/{y}/{x}`;
-      const ros = DUI.scopeRos();
-      const pts = ros.map((r) => [r.lng, r.lat]).concat(ros.map((r) => [DB.depotById(r.depotId).lng, DB.depotById(r.depotId).lat]));
-      const lngs = pts.map((p) => p[0]), lats = pts.map((p) => p[1]);
-      if (T.map) { T.map.remove(); T.mk = {}; }
-      T.ready = false;
-      T.map = new maplibregl.Map({
-        container: $('#dmap', v),
-        style: { version: 8, sources: {
-          dark: { type: 'raster', tiles: [esri('Canvas/World_Dark_Gray_Base')], tileSize: 256, maxzoom: 16, attribution: 'Basemap © Esri, HERE, Garmin, OpenStreetMap contributors' },
-          darkref: { type: 'raster', tiles: [esri('Canvas/World_Dark_Gray_Reference')], tileSize: 256, maxzoom: 16 },
-        }, layers: [
-          { id: 'bg', type: 'background', paint: { 'background-color': '#0c0d0f' } },
-          { id: 'dark', type: 'raster', source: 'dark', paint: { 'raster-saturation': -1, 'raster-brightness-max': 0.92 } },
-          { id: 'darkref', type: 'raster', source: 'darkref', paint: { 'raster-opacity': 0.75 } },
-        ] },
-        bounds: [[Math.min(...lngs) - 0.03, Math.min(...lats) - 0.03], [Math.max(...lngs) + 0.03, Math.max(...lats) + 0.03]],
-        fitBoundsOptions: { padding: 70 },
-        attributionControl: { compact: true },
-      });
-      T.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-      T.map.on('load', () => {
-        T.map.addSource('droutes', { type: 'geojson', data: routeGeo(), attribution: window.RoadNet && RoadNet.ok ? 'Routes © OpenStreetMap contributors (ODbL)' : undefined });
-        T.map.addLayer({ id: 'r-done', type: 'line', source: 'droutes', filter: ['==', ['get', 'k'], 'done'], paint: { 'line-color': '#6e737a', 'line-width': 2.5, 'line-dasharray': [1, 1.5] } });
-        T.map.addLayer({ id: 'r-ahead', type: 'line', source: 'droutes', filter: ['==', ['get', 'k'], 'ahead'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['case', ['==', ['get', 'sel'], 1], '#7aa7ff', '#ecedee'], 'line-width': 3.5 } });
-        ros.forEach((r) => {
-          const st = DUI.outletStatus(r);
-          const el = document.createElement('div');
-          el.className = 'mk mk-outlet ' + st.worst + ' selected';
-          el.innerHTML = `<div class="mk-label">${esc(r.name)}</div>`;
-          el.onclick = () => DUI.go('outlet', { ro: r.id, tab: 'stock' });
-          const w = document.createElement('div'); w.appendChild(el);
-          new maplibregl.Marker({ element: w }).setLngLat([r.lng, r.lat]).addTo(T.map);
-        });
-        new Set(ros.map((r) => r.depotId)).forEach((id) => {
-          const d = DB.depotById(id);
-          const el = document.createElement('div');
-          el.className = 'mk mk-depot';
-          el.innerHTML = `<div class="mk-label">${esc(d.name)}</div>`;
-          const w = document.createElement('div'); w.appendChild(el);
-          new maplibregl.Marker({ element: w }).setLngLat([d.lng, d.lat]).addTo(T.map);
-        });
-        T.ready = true;
-        update(v);
-        const sel = DUI.state.selTruck && W.orderById(DUI.state.selTruck);
-        if (sel && ACTIVE.includes(sel.status)) { const p = truckPos(sel); T.map.flyTo({ center: [p.lng, p.lat], zoom: 12.5, duration: 1200 }); }
-      });
-    },
-    update,
-    unmount() { if (T.map) { T.map.remove(); T.map = null; } T.mk = {}; T.ready = false; },
-  });
+  DUI.nextStep = nextStep;
+  DUI.progress = progress;
+  DUI.lineText = lineText;
 })();

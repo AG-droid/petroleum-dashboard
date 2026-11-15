@@ -1,6 +1,6 @@
 # Prahari for dealers (proof of concept)
 
-The dealer's side of Prahari: one place to see every outlet, know what to do next, order fuel, pay for it, track the truck and check what arrived. Like the Sales Officer dashboard, it doesn't make the dealer dig through reports. The home screen is a **ranked list of recommended actions**, each with the reason, the money at stake and a one-tap action.
+The dealer's side of Prahari: one place to see every outlet, know what to do next, order fuel, pay for it, track the truck and check what arrived. It is built exactly like the Sales Officer dashboard (live map, left panel, outlet panel, overlays, search, assistant, Present mode), centred on the dealer. Instead of making the dealer dig through reports, the left panel's **Priorities** list says what to do next, each with the reason, the money at stake and a one-tap action.
 
 Everything is **synthetic**. The demo dealer runs two outlets from the Sales Officer dashboard's world: **990104 Royal Service Station** (highway) and **990118 Aravali Petroleum** (city). The two apps show the same outlets, tanks, depots and roads.
 
@@ -18,17 +18,25 @@ No backend and no build step. The map needs an internet connection for its tiles
 
 ## What's in it
 
-| Screen | What it does |
+The layout and behaviour are the Sales Officer dashboard's, centred on the dealer:
+
+| Area | What it shows |
 | --- | --- |
-| **Today** | Greeting and one-line brief, the ranked **Do this now** cards, things in progress (orders, payments, claims, complaints), outlet cards, the account balance and an activity log. **Morning brief** previews the daily WhatsApp/app message. |
-| **Outlets** | One card per outlet plus a side-by-side table per product: target, sold today, usable stock (dead stock excluded), ordered, on the road, cover, price and preset check, critical logs, and first and last sale. |
-| **Outlet page** | Tabs: **Stock & pumps** (usable/dead stock, ullage, cover, run-dry time, tank gauges with water and temperature, nozzles with litres and flow rate, price board, latest sales). **Sales** (by hour against the 7-day average, month to date against target, 30-day trend, bill size, vehicle mix estimated from litres, payment modes). **Stock book** (opening dip + receipts − current = tank sales, against nozzle sales; printable daily report). **Integrity** (price, presets, non-selling nozzles and tanks, flow-rate variance, water, gauge status, reconciliation, dispenser events with action-taken reports). **Compliance** (renewals, inspection observations, inspection history). |
-| **Orders** | Suggested orders, the supply pipeline (stock, ordered, on the road, run-dry with and without orders) and every order with its next step. **New order** starts from the suggestion, packed into whole truck compartments and limited by tank space at arrival. |
-| **Pay** | Shows the dealer's collection account; the dealer pays by RTGS or NEFT from their own bank and records the UTR. The order releases once the credit lands. Prahari never moves money or asks for bank details. |
-| **Track** | The truck on real roads with its ETA, the road driven and the road ahead. |
-| **Receipt** | Invoice against what the tank gauge measured, allowed transit loss, density check, then confirm, or raise a shortage claim that becomes a credit note. |
-| **Account** | Balance, money held for released orders, available, pending credits; payments; ledger with running balance; invoices in the oil company's register layout (CSV download). |
-| **Messages** | Requests, complaints and claims with the Sales Officer, with simulated replies. |
+| **Map** (home) | Your outlets, coloured by status and always labelled. The supply points that serve them, and your own tank trucks moving on the real roads with the road ahead dashed. Zooming into an outlet switches to satellite in 3D. **Layers** adds a 3 km catchment, competitor outlets, the truck road network and the sales-area boundary. |
+| **Left panel** | Four headline numbers: sold today against the usual by now, the month against target, the balance you can order with, and your trucks on the road. Then **Priorities**: what to do, most money at stake first, each with the reason, the ₹ impact, the numbers behind it (**Why?**) and the fix as a button. Also **All alerts** (filter by category) and **Activity**. |
+| **Outlet panel** (click an outlet) | One line on what matters, with the fix as a button, plus **Order fuel** and **Sales Officer**. Then key numbers and tabs. **Overview:** tanks with dead stock hatched, pumps, price board, recent sales, to-dos. **Sales:** 30 days against target, today by hour against the usual, bill size, vehicles, payment modes, local market share. **Supply:** next delivery or the suggested order, usable stock and run-dry times, deliveries with shortages, the day's stock book. **Integrity:** price and presets, nozzles not selling, flow-rate variance, water, gauges, reconciliation, dispenser events with action-taken reports. **Compliance:** renewals, observations, inspection history. |
+| **Truck panel** (click a truck) | Plate, order, status and arrival time, route, load, driver, invoice and trip log. |
+| **Orders & trucks** | Order counts by stage, suggested orders, the supply pipeline (run-dry with and without orders), every order with its next step, and your supply points' hours and cut-off. |
+| **Account & payments** | Balance, money held for released orders, payments on their way, your collection account, payments, a running ledger and invoices (CSV download). |
+| **Compliance** | Renewals across your outlets (book them here), inspection observations, inspection history. |
+| **Performance** | Daily sales against target, month to date by outlet, fuel mix, today by hour, payment modes and vehicles. |
+| **Sales Officer** | Requests, complaints and claims with the Sales Officer, with simulated replies. |
+| **Assistant** | Plain questions: "what should I do first?", "when will diesel run out?", "how much do I need to pay?", "where is my truck?". The answers are computed from the live data, with buttons to act. |
+| **Search** | `⌘K` / `Ctrl+K` for outlets, orders, invoices, trucks, UTRs and actions. |
+| **Present mode** | **Present** (or `#tour`) gives a guided demo that drives the live screen, like the Sales Officer's. |
+| **Demo clock** | 1× to 300× in the top bar. |
+
+Forms open as dialogs: new or changed order, pay by RTGS/NEFT with the UTR (no money moved), receipt check and shortage claim, action-taken report, renewal booking, closing an observation, message to the Sales Officer, morning brief preview.
 
 ## The demo story
 
@@ -42,12 +50,13 @@ At start-up, the cards say:
 6. **A dispenser controller was reset overnight.** It needs an action-taken report.
 7. **Water in the diesel tank, a nozzle flowing slowly, an open inspection observation, behind target.**
 
-**Suggested walkthrough:** press **Pay** → **Fill a demo UTR** → **Record payment**, then set the clock to **300×** in the top bar. The payment is credited, the order releases, the truck loads, appears on **Track**, drives the real road and unloads. Then **Confirm the receipt**. Every other card's action works too, and the card disappears once its cause is fixed.
+**Suggested walkthrough:** press **Present**, or try it yourself: in Priorities, press **Pay ₹10.91 lakh**, then **Fill a demo UTR**, then **Record payment**. Set the clock to **300×**. The payment is credited, the order releases, the truck loads and appears on the map driving the real road, then unloads. Click the truck to follow it, then confirm the receipt. Every other item's action works too, and the item disappears once its cause is fixed.
 
 ## Deep links
 
-- `#view=orders` (`today`, `outlets`, `orders`, `track`, `account`, `messages`)
-- `#outlet=990118&tab=integrity` (`stock`, `sales`, `book`, `integrity`, `compliance`)
+- `#outlet=990118&tab=integrity` (`overview`, `sales`, `supply`, `integrity`, `compliance`)
+- `#view=logistics` (`outlets`, `logistics`, `account`, `compliance`, `analytics`, `messages`, `copilot`)
+- `#tour` (`#tour&auto` plays by itself, `#tour&step=7` jumps to a step)
 - `#speed=60` starts the demo clock at 60× (`1`, `10`, `60`, `300`)
 
 ## How the recommendations work
@@ -63,16 +72,20 @@ The rules are plain and explainable. Every threshold lives in `js/config.js` (fo
 
 ```
 poc/dealer/
-├── index.html      shell (shares ../css/styles.css, ../js/data.js, roads and charts with the Sales Officer dashboard)
-├── css/dealer.css  page layout, cards, phone layout, print styles
+├── index.html      the Sales Officer dashboard's shell (shares ../css/styles.css, ../js/data.js, roads, charts)
+├── css/dealer.css  the few additions on top of the shared styles
 └── js/
     ├── config.js   thresholds and business constants
     ├── world.js    the demo dealer, outlets, history, orders, ledger and storyline
     ├── engine.js   simulated clock, forecasts, suggested orders, lifecycle, recommendation rules, actions (no DOM)
-    ├── ui.js       shell, helpers, recommendation cards, Today and Outlets
-    ├── outlet.js   the outlet page
-    ├── orders.js   orders, payment, receipt, order detail, truck tracking
-    ├── account.js  account and messages
+    ├── ui.js       shell, left panel (day at a glance, Priorities, alerts, activity), search, selection
+    ├── map.js      the map: your outlets, supply points, trucks, routes, catchment, competitors
+    ├── panel.js    the right-hand panel: outlet tabs and truck
+    ├── views.js    overlays: outlets, orders & trucks, account, compliance, performance, messages, assistant
+    ├── forms.js    toasts, dialogs and the forms behind recommendation actions
+    ├── orders.js   new order, payment, receipt, order detail
+    ├── account.js  invoice CSV, message to the Sales Officer
+    ├── tour.js     Present mode (the Sales Officer tour's engine, dealer story)
     └── main.js     start-up and deep links
 ```
 

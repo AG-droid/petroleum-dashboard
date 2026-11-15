@@ -5,7 +5,7 @@
 > **Status:** proof of concept, running on **synthetic data** for the Gurugram Sales Area (Haryana).
 > No real oil company data, branding or systems are used.
 >
-> **New: Prahari for dealers** ([`poc/dealer/`](poc/dealer/README.md)), the dealer's side. It shows a ranked list of recommended actions built from the outlet's data, then lets the dealer order fuel, pay by RTGS/NEFT (UTR recorded; no money moved), track the truck and check the receipt.
+> **New: Prahari for dealers** ([`poc/dealer/`](poc/dealer/README.md)), the dealer's side, built exactly like the Sales Officer dashboard. A live map of the dealer's outlets and trucks, with a Priorities list built from the outlet's data. The dealer can order fuel, pay by RTGS/NEFT (UTR recorded; no money moved), track the truck and check the receipt.
 
 ![PRAHARI operations map: the Gurugram Sales Area with live outlets, tank trucks and supply points](docs/screenshots/01-ops-map.png)
 

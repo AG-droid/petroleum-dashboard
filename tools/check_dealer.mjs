@@ -109,6 +109,7 @@ for (const hour of [1, 10, 19]) {
   check(`${at} absurd amounts are rejected`, [Infinity, NaN, 1e12, -5].every((x) => !!A.validatePayment(x, 'NEFT', A.demoUtr('NEFT'))));
   Eng.advance((C.paymentCreditMin + 1) * MIN);
   check(`${at} credit releases the waiting order`, waiting.status !== 'awaiting_payment', waiting.status);
+  check(`${at} release time is recorded`, waiting.releasedTs >= waiting.createdTs && waiting.releasedTs <= waiting.loadStartTs);
   check(`${at} released order holds its value`, Eng.money().blocked >= waiting.value || waiting.invoice);
 
   // ---------- Lifecycle to receipt ----------
