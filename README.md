@@ -21,7 +21,7 @@
 8. [Research & planning documents](#8-research--planning-documents)
 9. [Limitations & disclaimer](#9-limitations--disclaimer)
 10. [Tech stack & credits](#10-tech-stack--credits)
-11. [License](#11-license)
+11. [Copyright](#11-copyright)
 
 ---
 
@@ -284,10 +284,10 @@ petroleum-dashboard/
 - **Google Fonts:** Inter and JetBrains Mono
 - Everything else (simulation, CCTV renderer, charts, UI) is hand-written vanilla JavaScript.
 
-## 11. License
+## 11. Copyright
 
-Copyright 2026 the Prahari authors.
+Copyright © 2026 the Prahari authors. All rights reserved.
 
-The code and documents in this repository are licensed under the [Apache License 2.0](LICENSE). You may use, change and share them, including commercially, as long as you keep the copyright and license notices.
+This repository is public so it can be viewed and shared for discussion. No license is granted to copy, modify, distribute or use the code, documents, designs or the "Prahari" name, in whole or in part, without written permission.
 
-The license does not grant any rights to the name "Prahari" or its logo (see section 6 of the license). Third-party components keep their own licences: MapLibre GL JS is BSD-3-Clause (`poc/vendor/maplibre-gl-4.7.1/LICENSE.txt`). Esri map tiles and Google Fonts are loaded from their services under those providers' terms and are not covered by this license.
+Third-party components keep their own licences: MapLibre GL JS is BSD-3-Clause (`poc/vendor/maplibre-gl-4.7.1/LICENSE.txt`). Esri map tiles and Google Fonts are loaded from their services under those providers' terms.
