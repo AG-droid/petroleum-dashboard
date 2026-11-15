@@ -67,9 +67,25 @@ def _rules(_: argparse.Namespace) -> int:
 
 
 def _seed_demo(args: argparse.Namespace) -> int:
-    """Generate today's sample files and import them: the one-step demo setup."""
-    args.as_of, args.paths, args.force = None, [args.out], False
-    return _generate(args) or _import(args)
+    """Generate today's sample files and import them: the one-step demo setup.
+
+    On a new business day the previous day's generated history is cleared first (see
+    ``prahari.samples.reset``) and every file is re-imported.
+    """
+    from datetime import timedelta
+
+    from prahari.db.session import session_scope
+    from prahari.domain.time import business_date
+    from prahari.samples.reset import start_new_demo_day_if_needed
+
+    s = get_settings()
+    args.as_of, args.paths = None, [args.out]
+    if rc := _generate(args):
+        return rc
+    yesterday = business_date(datetime.now(UTC), s.tz, s.business_day_start_hour) - timedelta(days=1)
+    with session_scope() as session:
+        args.force = start_new_demo_day_if_needed(session, yesterday)
+    return _import(args)
 
 
 def _feed(args: argparse.Namespace) -> int:

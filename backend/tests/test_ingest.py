@@ -165,3 +165,21 @@ def test_sales_area_json_is_validated(session: Session, settings: Settings, tmp_
     job = import_file(session, p, settings)
     assert job.status == "failed" and job.rows_rejected >= 1
     assert any(e["column"] and e["column"].startswith("products.0") for e in job.errors or [])
+
+
+def test_new_demo_day_clears_generated_history(session: Session, settings: Settings) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from prahari.domain.time import business_date
+    from prahari.models import Indent
+    from prahari.samples.reset import start_new_demo_day_if_needed
+
+    yesterday = business_date(datetime.now(UTC), settings.tz, settings.business_day_start_hour) - timedelta(
+        days=1
+    )
+    assert not start_new_demo_day_if_needed(session, yesterday)  # same day: keep everything
+    assert session.scalar(select(func.count()).select_from(NozzleDailySales))
+    assert start_new_demo_day_if_needed(session, yesterday + timedelta(days=1))
+    for model in (NozzleDailySales, Receipt, Indent):
+        assert session.scalar(select(func.count()).select_from(model)) == 0
+    assert session.scalar(select(func.count(Outlet.id))) == 44  # masters stay
