@@ -1,0 +1,31 @@
+# Serves the dashboard and proxies the API on one origin (no CORS needed in the browser).
+:8080 {
+	encode gzip
+
+	# Bound every request body before it reaches the API (uploads are limited to 20 MB there).
+	request_body {
+		max_size 21MB
+	}
+
+	# Machine-to-machine ingestion is not exposed through the web server: the demo feed posts
+	# straight to the api container on the internal Docker network.
+	handle /api/v1/ingest/* {
+		respond "Not available through the web server" 403
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+}

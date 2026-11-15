@@ -13,27 +13,36 @@
   }
   if (typeof maplibregl === 'undefined') { fail('Map library failed to load — check your internet connection and reload.'); return; }
 
-  try {
-    Sim.start();
-    UI.init();
-  } catch (e) { console.error(e); fail('Startup error: ' + e.message); return; }
+  function start() {
+    try {
+      Sim.start();
+      UI.init();
+    } catch (e) { console.error(e); fail('Startup error: ' + e.message); return; }
 
-  let done = false;
-  const reveal = () => {
-    if (done) return; done = true;
-    intro.classList.add('fade');
-    setTimeout(() => intro.remove(), 900);
-    MapView.update();
-    // Deep links for demos: #outlet=GGN-104&tab=cameras  or  #view=surveillance
-    const h = new URLSearchParams(location.hash.slice(1));
-    if (h.get('base') === 'sat' || h.get('base') === 'dark') MapView.setBasemap(h.get('base'));
-    // Present mode: #tour  ·  #tour&auto (plays by itself)  ·  #tour&step=5 (jump to a step)
-    if (h.has('tour')) setTimeout(() => Tour.start(h.has('auto'), +(h.get('step') || 0)), 500);
-    else if (h.get('outlet')) setTimeout(() => UI.selectOutlet(h.get('outlet'), h.get('tab') || undefined), 400);
-    else if (h.get('view')) { setTimeout(() => MapView.home(false), 100); setTimeout(() => UI.setView(h.get('view')), 300); }
-    else setTimeout(() => MapView.intro(), 300);
-  };
-  document.getElementById('presentBtn').addEventListener('click', () => Tour.restart());
-  MapView.init(reveal);
-  setTimeout(reveal, 8000); // never leave the user on the splash screen
+    let done = false;
+    const reveal = () => {
+      if (done) return; done = true;
+      intro.classList.add('fade');
+      setTimeout(() => intro.remove(), 900);
+      MapView.update();
+      // Deep links for demos: #outlet=GGN-104&tab=cameras  or  #view=surveillance
+      const h = new URLSearchParams(location.hash.slice(1));
+      if (h.get('base') === 'sat' || h.get('base') === 'dark') MapView.setBasemap(h.get('base'));
+      // Present mode: #tour  ·  #tour&auto (plays by itself)  ·  #tour&step=5 (jump to a step)
+      if (h.has('tour')) setTimeout(() => Tour.start(h.has('auto'), +(h.get('step') || 0)), 500);
+      else if (h.get('outlet')) setTimeout(() => UI.selectOutlet(h.get('outlet'), h.get('tab') || undefined), 400);
+      else if (h.get('view')) { setTimeout(() => MapView.home(false), 100); setTimeout(() => UI.setView(h.get('view')), 300); }
+      else setTimeout(() => MapView.intro(), 300);
+    };
+    document.getElementById('presentBtn').addEventListener('click', () => Tour.restart());
+    MapView.init(reveal);
+    setTimeout(reveal, 8000); // never leave the user on the splash screen
+  }
+
+  // Use the backend when it is there (`make up`); otherwise run the self-contained demo.
+  // Api.connect() never throws and gives up after a few seconds.
+  Api.connect().then((live) => {
+    if (live) intro.querySelector('.l2').textContent = 'Loading Gurugram Sales Area from the server';
+    start();
+  });
 })();

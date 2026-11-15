@@ -94,8 +94,11 @@
   const HOURLY_RAW = [0.012, 0.008, 0.006, 0.006, 0.009, 0.02, 0.036, 0.056, 0.066, 0.062, 0.057, 0.054, 0.052, 0.05, 0.05, 0.053, 0.059, 0.066, 0.068, 0.06, 0.048, 0.038, 0.03, 0.02];
   const hs = HOURLY_RAW.reduce((a, b) => a + b, 0);
   const HOURLY = HOURLY_RAW.map((v) => v / hs);
+  // The sales area is in India: hour-of-day logic runs on IST whatever the viewer's time zone.
+  // istNow() returns a Date whose local getters (getHours, getDate, ...) read Indian time.
+  function istNow() { return new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000); }
   function dayFractionElapsed(date) {
-    const d = date || new Date();
+    const d = date || istNow();
     const h = d.getHours(), m = d.getMinutes() + d.getSeconds() / 60;
     let f = 0;
     for (let i = 0; i < h; i++) f += HOURLY[i];
@@ -356,7 +359,7 @@
   window.DB = {
     meta: { salesArea: 'Gurugram Sales Area', division: 'Gurugram Division', state: 'Haryana State Office', officer: 'Sales Officer, Gurugram SA', generatedAt: NOW },
     PRODUCTS, ROADS, HOURLY, outlets, depots, tankers, competitors, area, stories: S,
-    util: { haversineKm, pathInfo, pointAt, buildRoute, nearestDepot, dayFractionElapsed, mulberry32, DAY },
+    util: { haversineKm, pathInfo, pointAt, buildRoute, nearestDepot, dayFractionElapsed, istNow, mulberry32, DAY, TZ: 'Asia/Kolkata' },
     byId: (id) => outlets.find((o) => o.id === id),
     depotById: (id) => depots.find((d) => d.id === id),
     tankerById: (id) => tankers.find((t) => t.id === id),

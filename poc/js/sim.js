@@ -38,7 +38,7 @@
     const frac = util.dayFractionElapsed();
     const todayL = Object.values(o.today).reduce((a, b) => a + b, 0);
     const targetDailyL = o.targetMonth / 30 * 1000;
-    const dom = new Date().getDate();
+    const dom = util.istNow().getDate();
     const prior = o.hist.slice(-dom, -1).reduce((a, h) => a + h.total, 0);
     const mtdKL = prior + todayL / 1000;
     const mtdTarget = o.targetMonth / 30 * (dom - 1 + frac);
@@ -83,7 +83,10 @@
     const a = Sim.alerts.find((x) => x.key === key && x.status !== 'resolved');
     if (a) { a.status = 'resolved'; Sim.alertsVersion++; Sim.alerts = Sim.alerts.filter((x) => x !== a); pushEvent('ok', `Resolved: ${a.title}`, a.outletId); }
   }
-  function rule(cond, key, data) { if (cond) upsert(key, data); else resolve(key); }
+  function rule(cond, key, data) {
+    if (Sim.serverOwned && Sim.serverOwned(key)) return; // the backend raises and resolves these
+    if (cond) upsert(key, data); else resolve(key);
+  }
 
   function evaluate() {
     outlets.forEach((o) => {
@@ -113,7 +116,7 @@
       rule(!o.raOnline, 'ra:' + o.id, {
         sev: 'high', cat: 'Equipment', outletId: o.id,
         title: `Automation offline at ${o.name}`,
-        detail: `No data from forecourt controller since ${new Date(Sim.raLastSync).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}. Tank and sales figures are stale.`,
+        detail: `No data from forecourt controller since ${new Date(Sim.raLastSync).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: util.TZ })}. Tank and sales figures are stale.`,
       });
       rule(m.camsOff > 0, 'cam:' + o.id, {
         sev: 'medium', cat: 'Security', outletId: o.id,
@@ -128,7 +131,7 @@
       m.lic.forEach((l) => rule(l.days <= 30, 'lic:' + l.k + ':' + o.id, {
         sev: l.days <= 10 ? 'high' : 'medium', cat: 'Compliance', outletId: o.id,
         title: `${l.label} due in ${l.days} days at ${o.name}`,
-        detail: `Due ${new Date(l.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. Dealer to submit renewal documents.`,
+        detail: `Due ${new Date(l.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: util.TZ })}. Dealer to submit renewal documents.`,
       }));
       o.compliance.irregularities.forEach((ir, i) => rule(ir.status === 'Open', 'irr:' + i + ':' + o.id, {
         sev: 'medium', cat: 'Compliance', outletId: o.id,
@@ -298,13 +301,14 @@
   // ---------- Main tick ----------
   function step() {
     Sim.t++;
-    const h = new Date().getHours();
+    const h = util.istNow().getHours();
     const perSec = HOURLY[h] / 3600;
     outlets.forEach((o) => {
       if (!o.raOnline) return;
       Object.keys(o.prod).forEach((p) => {
         const L = o.prod[p] * 1000 * perSec * rr(0.6, 1.4);
-        o.today[p] += L;
+        if (!o._serverToday) o.today[p] += L; // with a backend, live sales come from pump totalisers
+        if (o._serverStock) return; // ...and stock from tank readings
         const tanks = o.tanks.filter((t) => t.product === p && t.stock > 0.05);
         if (tanks.length) { const tk = tanks.sort((a, b) => b.stock - a.stock)[0]; tk.stock = Math.max(0, tk.stock - L / 1000); }
       });
@@ -359,7 +363,8 @@
     Sim.baseBroken = outlets.filter((q) => q.cameras.some((c) => !c.online) || q.nozzles.some((n) => n.status === 'Fault')).length;
     outlets.forEach(compute);
     evaluate();
-    Sim.alerts.forEach((a) => { a.fresh = false; a.ts = Date.now() - Math.floor(rnd() * 3 * 3600 * 1000); });
+    // Demo alerts get plausible "opened" times; alerts from the backend keep their real ones.
+    Sim.alerts.forEach((a) => { a.fresh = false; if (!a.server) a.ts = Date.now() - Math.floor(rnd() * 3 * 3600 * 1000); });
     Sim.alerts.sort((a, b) => b.ts - a.ts);
     // seed a few events
     for (let i = 0; i < 6; i++) { const o = pick(outlets); const [tag, fn] = pick(AI_TEXT); Sim.aiEvents.push({ ts: Date.now() - i * 95000, outletId: o.id, camId: o.cameras[0].id, tag, text: fn(o) }); }

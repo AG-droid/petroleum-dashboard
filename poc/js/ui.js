@@ -4,6 +4,7 @@
 (function () {
   'use strict';
   const { outlets, tankers, depots, competitors, PRODUCTS, HOURLY } = DB;
+  const TZ = DB.util.TZ; // the sales area is in India: show every time in IST
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -32,9 +33,9 @@
     inr: (v) => '₹' + Math.round(v).toLocaleString('en-IN'),
     lakh: (v) => '₹' + (v / 100000).toFixed(1) + ' lakh',
     pct: (v) => Math.round(v * 100) + '%',
-    time: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    hm: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-    date: (ts) => new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    time: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ }),
+    hm: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ }),
+    date: (ts) => new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ }),
     ago(ts) {
       const s = (Date.now() - ts) / 1000;
       if (s < 45) return 'just now';
@@ -42,7 +43,7 @@
       if (s < 86400) return Math.round(s / 3600) + ' h ago';
       return Math.round(s / 86400) + ' d ago';
     },
-    dur(days) { const h = days * 24; return h < 36 ? `about ${Math.max(1, Math.round(h))} hours` : `about ${days.toFixed(1)} days`; },
+    dur(days) { const h = days * 24; return h < 1.5 ? 'less than 2 hours' : h < 36 ? `about ${Math.round(h)} hours` : `about ${days.toFixed(1)} days`; },
   };
   const achCls = (a) => (a < 0.85 ? 'c-crit' : a < 0.95 ? 'c-warn' : '');
   const coverCls = (d) => (d < 1 ? 'c-crit' : d < 2 ? 'c-warn' : '');
@@ -109,7 +110,7 @@
 
   function clock() {
     const d = new Date();
-    $('#clock').innerHTML = `<span class="live-dot"></span>${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+    $('#clock').innerHTML = `<span class="live-dot"></span>${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ })}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ })} IST`;
   }
   function onKey(e) {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
@@ -249,6 +250,12 @@
     bindActs(body);
     const sa = $('#seeAll'); if (sa) sa.onclick = () => { UI.state.lpTab = 'alerts'; UI.state.lastAlertVer = -1; updateLeft(); };
   }
+  // Re-render panels after data changed outside the 1-second tick (e.g. a backend refresh).
+  UI.refresh = function () {
+    UI.state.lastAlertVer = -1; UI.state.headSig = '';
+    updateLeft();
+    if (UI.state.selected) { renderOutletHead(DB.byId(UI.state.selected)); renderTab(); }
+  };
   function bindActs(root) {
     $$('[data-act]', root).forEach((b) => { b.onclick = (e) => { e.stopPropagation(); doAction(b.dataset.act, b.dataset.id); }; });
   }
@@ -256,6 +263,7 @@
     if (act === 'driver') { const t = DB.tankerById(id); Sim.actions.contactDriver(t); toast(`Driver of ${t.plate} contacted`, 'Truck is back on its planned route. Incident logged.', 'ok'); }
     if (act === 'dispatch') { const o = DB.byId(id); const t = Sim.actions.priorityDispatch(o); toast(`Truck ${t.plate} assigned to ${o.name}`, `Loading at ${DB.depotById(t.depotId).name}. Dealer asked to clear payment.`, 'ok'); }
     if (act === 'hold') { const o = DB.byId(id); Sim.actions.holdTank(o); toast('Tank held and sample requested', `${o.name}: quality team notified`, 'ok'); }
+    if (act === 'ra' && window.Api && Api.connected) { const o = DB.byId(id); toast('Restart requested', `${o.name}: the dealer has been asked to restart the automation controller. The status updates when data arrives.`, 'ok'); return; }
     if (act === 'ra') { const o = DB.byId(id); toast('Reconnecting…', `Trying the backup 4G link at ${o.name}`); setTimeout(() => { Sim.actions.resetRA(o); toast('Automation link restored', o.name, 'ok'); }, 2000); }
     UI.state.lastAlertVer = -1; UI.state.headSig = '';
     setTimeout(() => { updateLeft(); if (UI.state.selected) { renderOutletHead(DB.byId(UI.state.selected)); if (UI.state.tab === 'supply') renderTab(); } }, 60);
@@ -412,7 +420,7 @@
     body.innerHTML = `
       ${o.competitorNote ? `<div class="callout warn">${o.competitorNote}.</div>` : ''}
       ${!o.raOnline ? `<div class="callout crit">Figures below are from the last sync at ${fmt.hm(Sim.raLastSync)}.</div>` : ''}
-      <div class="section"><div class="sh"><h4>Tanks</h4><span class="aside">live from tank gauges</span></div><div id="ovTanks"></div></div>
+      <div class="section"><div class="sh"><h4>Tanks</h4><span class="aside">${window.Api ? Api.tankNote(o) : 'simulated tank gauges'}</span></div><div id="ovTanks"></div></div>
       <div class="section"><div class="sh"><h4>Pumps</h4><span class="aside" id="ovNozA"></span></div><div class="nozzles" id="ovNoz"></div></div>
       <div class="section"><div class="sh"><h4>Recent sales</h4><span class="aside" id="ovTodayA"></span></div><div id="ovTx"></div></div>
       <div class="section"><div class="sh"><h4>Camera</h4><span class="aside text-btn" id="ovAllCams">All ${o.cameras.length} cameras</span></div>
@@ -468,7 +476,7 @@
       const labels = o.hist.map((h) => +h.date.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+h.date.slice(5, 7) - 1]);
       Charts.line($('#chSales'), { labels, series: [{ data: o.hist.map((h) => h.total), color: '#7aa7ff', label: 'Sold', fill: true }, { data: o.hist.map(() => o.targetMonth / 30), color: '#6e737a', label: 'Target', dash: [3, 4], width: 1.2 }], yFmt: (v) => v.toFixed(0) });
       Charts.bars($('#chMix'), { horizontal: true, labelWidth: 110, items: Object.keys(o.prod).map((p) => ({ label: pname(p), value: o.hist.reduce((a, h) => a + h[p], 0), color: PRODUCTS[p].color })), fmt: (v) => v.toFixed(0) + ' kL' });
-      const hr = new Date().getHours();
+      const hr = DB.util.istNow().getHours();
       Charts.bars($('#chHour'), { items: hourly(o).map((v, i) => ({ label: String(i), value: i <= hr ? v : 0, color: i === hr ? '#ecedee' : '#4a4f57' })), yFmt: (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v) });
     });
   }
@@ -819,7 +827,7 @@
       <div class="cp-sugg" id="cpSugg">${['Summarise my area', 'Which outlets may run dry?', 'Who is behind target?', 'Where are my trucks?', 'What renewals are due?', 'Any security issues?'].map((s) => `<button class="chip">${s}</button>`).join('')}</div>
       <div class="cp-input"><input class="input" id="cpIn" placeholder="Ask a question, e.g. how is ${outlets[5].name} doing?"><button class="btn primary" id="cpGo">${I.send}</button></div>`;
     bindClose(ov);
-    if (!UI.state.cpMsgs.length) UI.state.cpMsgs.push({ who: 'bot', html: 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + '. ' + answer('summary') });
+    if (!UI.state.cpMsgs.length) UI.state.cpMsgs.push({ who: 'bot', html: 'Good ' + (DB.util.istNow().getHours() < 12 ? 'morning' : DB.util.istNow().getHours() < 17 ? 'afternoon' : 'evening') + '. ' + answer('summary') });
     drawMsgs();
     const ask = (q) => {
       if (!q.trim()) return;
