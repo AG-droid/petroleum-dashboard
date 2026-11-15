@@ -11,3 +11,15 @@ private/
 
 # Office lock files
 ~$*
+
+# Python / backend
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+backend/sample-data/
+deploy/.env
