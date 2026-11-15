@@ -4,7 +4,7 @@
   const intro = document.createElement('div');
   intro.id = 'intro';
   intro.innerHTML = `<div class="brand-mark"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z" fill="none" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="#111"/></svg></div>
-    <div class="l2">Loading Gurugram Sales Area</div><div class="loadbar"><i></i></div>`;
+    <div class="l2">Loading Gurugram Retail Sales Area</div><div class="loadbar"><i></i></div>`;
   document.body.appendChild(intro);
 
   function fail(msg) {
@@ -25,7 +25,7 @@
       intro.classList.add('fade');
       setTimeout(() => intro.remove(), 900);
       MapView.update();
-      // Deep links for demos: #outlet=GGN-104&tab=cameras  or  #view=surveillance
+      // Deep links for demos: #outlet=990104&tab=cameras  or  #view=surveillance
       const h = new URLSearchParams(location.hash.slice(1));
       if (h.get('base') === 'sat' || h.get('base') === 'dark') MapView.setBasemap(h.get('base'));
       // Present mode: #tour  ·  #tour&auto (plays by itself)  ·  #tour&step=5 (jump to a step)
@@ -42,7 +42,7 @@
   // Use the backend when it is there (`make up`); otherwise run the self-contained demo.
   // Api.connect() never throws and gives up after a few seconds.
   Api.connect().then((live) => {
-    if (live) intro.querySelector('.l2').textContent = 'Loading Gurugram Sales Area from the server';
+    if (live) intro.querySelector('.l2').textContent = 'Loading Gurugram Retail Sales Area from the server';
     start();
   });
 })();

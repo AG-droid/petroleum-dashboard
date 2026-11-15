@@ -52,19 +52,19 @@
 
   // ---------- Roads of the Gurugram sales area (approximate) ----------
   const ROADS = [
-    { id: 'nh48', osm: /NH48/, name: 'NH-48 (Delhi–Jaipur)', kind: 'Highway', n: 12,
+    { id: 'nh48', osm: /NH48/, name: 'NH-48 (Delhi–Jaipur)', kind: 'Highway', market: 'D1-Highway', n: 12,
       pts: [[77.100, 28.508], [77.072, 28.472], [77.040, 28.449], [77.012, 28.426], [76.980, 28.400], [76.937, 28.357], [76.870, 28.310], [76.800, 28.212], [76.700, 28.140], [76.590, 28.082]],
       places: ['Sirhaul', 'IFFCO Chowk', 'Rajiv Chowk', 'Hero Honda Chowk', 'Kherki Daula', 'Manesar', 'Bilaspur Chowk', 'Dharuhera', 'Kapriwas', 'Bawal'] },
-    { id: 'sohna', osm: /NH248A|Sohna Road/, name: 'Sohna Road (NH-248A)', kind: 'Urban', n: 6,
+    { id: 'sohna', osm: /NH248A|Sohna Road/, name: 'Sohna Road (NH-248A)', kind: 'Urban', market: 'B-Urban', n: 6,
       pts: [[77.040, 28.449], [77.041, 28.415], [77.044, 28.384], [77.050, 28.345], [77.060, 28.292], [77.066, 28.250]],
       places: ['Subhash Chowk', 'Badshahpur', 'Vatika Chowk', 'Bhondsi', 'Raisina', 'Sohna'] },
-    { id: 'fbd', osm: /Faridabad|MDR137/, name: 'Gurugram–Faridabad Road', kind: 'Urban', n: 4,
+    { id: 'fbd', osm: /Faridabad|MDR137/, name: 'Gurugram–Faridabad Road', kind: 'Urban', market: 'C-Urban', n: 4,
       pts: [[77.080, 28.468], [77.102, 28.452], [77.140, 28.432], [77.200, 28.420], [77.255, 28.410]],
       places: ['Sikanderpur', 'Gwal Pahari', 'Bandhwari', 'Mangar'] },
-    { id: 'pataudi', osm: /NH352W|Pataudi/, name: 'Pataudi Road', kind: 'Rural', n: 5,
+    { id: 'pataudi', osm: /NH352W|Pataudi/, name: 'Pataudi Road', kind: 'Rural', market: 'E-Rural', n: 5,
       pts: [[77.000, 28.463], [76.960, 28.448], [76.920, 28.430], [76.860, 28.390], [76.810, 28.345], [76.780, 28.322]],
       places: ['Basai', 'Garhi Harsaru', 'Sultanpur', 'Jamalpur', 'Pataudi'] },
-    { id: 'dwarka', osm: /NH248BB|Dwarka Expressway/, name: 'Dwarka Expressway', kind: 'Urban', n: 4,
+    { id: 'dwarka', osm: /NH248BB|Dwarka Expressway/, name: 'Dwarka Expressway', kind: 'Urban', market: 'B-Urban', n: 4,
       pts: [[77.008, 28.468], [77.018, 28.498], [77.028, 28.528], [77.040, 28.556]],
       places: ['Sector 37D', 'Sector 99', 'Sector 106', 'Bajghera'] },
   ];
@@ -118,10 +118,14 @@
 
   // ---------- Outlets ----------
   const outlets = [];
+  // RO codes: 6 digits, as in the oil companies' systems. The demo uses the 9901xx range, kept
+  // apart from real outlet codes so a synthetic alert can never point at a real outlet.
   let seq = 101;
   function makeOutlet(lng, lat, category, roadIdx, roadT, locality, roadName) {
     const ksk = category === 'Rural' && chance(0.4);
-    const id = 'GGN-' + (seq++);
+    const id = String(990000 + seq++);
+    // Class of market (A/B/C-Urban, D1/D2-Highway, E-Rural); city-centre outlets are A-Urban.
+    const marketClass = roadIdx == null ? 'A-Urban' : ROADS[roadIdx].market;
     const daily = category === 'Highway' ? r(9, 22) : category === 'Urban' ? r(5, 13) : r(2, 5);
     const hsdShare = category === 'Highway' ? r(0.6, 0.75) : category === 'Urban' ? r(0.3, 0.45) : r(0.55, 0.7);
     const hasXP = category === 'Urban' ? chance(0.65) : category === 'Highway' ? chance(0.35) : false;
@@ -194,7 +198,7 @@
 
     const creditLimit = ri(5, 40) * 100000;
     const o = {
-      id, name: outletName(ksk), category, ksk, lng, lat, roadIdx, roadT, locality,
+      id, name: outletName(ksk), category, marketClass, ksk, lng, lat, roadIdx, roadT, locality,
       road: roadName || 'City', address: locality + ', ' + (roadName || 'Gurugram'),
       type: category === 'Rural' ? (chance(0.7) ? 'DODO' : 'CODO') : pick(['DODO', 'DODO', 'CODO', 'CODO', 'COCO']),
       automated: chance(0.86), raOnline: true,
@@ -388,7 +392,8 @@
   area.push(area[0]);
 
   window.DB = {
-    meta: { salesArea: 'Gurugram Sales Area', division: 'Gurugram Division', state: 'Haryana State Office', officer: 'Sales Officer, Gurugram SA', generatedAt: NOW },
+    // Sales hierarchy: State Office → Divisional Office → Retail Sales Area (the Sales Officer's patch)
+    meta: { salesArea: 'Gurugram Retail Sales Area', division: 'Gurugram Divisional Office', state: 'Haryana State Office', officer: 'Sales Officer, Gurugram Retail Sales Area', generatedAt: NOW },
     PRODUCTS, ROADS, HOURLY, outlets, depots, tankers, competitors, area, stories: S,
     util: { haversineKm, pathInfo, pointAt, buildRoute, nearestDepot, dayFractionElapsed, istNow, mulberry32, DAY, TZ: 'Asia/Kolkata' },
     byId: (id) => outlets.find((o) => o.id === id),

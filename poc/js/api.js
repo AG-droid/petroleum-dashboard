@@ -101,8 +101,8 @@
     });
   }
 
-  // Server keys carry detail the dashboard groups by outlet: dry:GGN-104:HSD → dry:GGN-104,
-  // den:GGN-109:INV123 → den:GGN-109, lic:PESO:GGN-131 → lic:peso:GGN-131.
+  // Server keys carry detail the dashboard groups by outlet: dry:990104:HSD → dry:990104,
+  // den:990109:INV123 → den:990109, lic:PESO:990131 → lic:peso:990131.
   function clientKey(a) {
     const parts = a.key.split(':');
     if (a.rule === 'lic') return `lic:${LIC_KEY[parts[1]] || parts[1]}:${parts[2]}`;

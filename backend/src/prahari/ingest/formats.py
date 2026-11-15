@@ -36,7 +36,8 @@ class FileFormat:
     description: str
 
 
-SAP = "SAP_CUST_CODE"  # the oil company's customer code for the outlet; the join key everywhere
+# The outlet's 6-digit RO code: the join key in every file, as in the oil company's own MIS.
+RO = "RO_CODE"
 
 FORMATS: dict[FileKind, FileFormat] = {
     f.kind: f
@@ -45,11 +46,11 @@ FORMATS: dict[FileKind, FileFormat] = {
             FileKind.RO_MASTER,
             "Retail outlet master",
             (
-                SAP,
-                "RO_REF",
+                RO,
+                "SAP_CUST_CODE",  # SAP sold-to code if different from the RO code; may be blank
                 "RO_NAME",
                 "SALES_AREA",
-                "CATEGORY",
+                "CLASS_OF_MARKET",  # A-Urban, B-Urban, C-Urban, D1-Highway, D2-Highway, E-Rural
                 "RO_TYPE",
                 "KSK",
                 "LOCATION",
@@ -68,19 +69,19 @@ FORMATS: dict[FileKind, FileFormat] = {
         FileFormat(
             FileKind.TANK_MASTER,
             "Tank master",
-            (SAP, "TANK_NO", "PRODUCT", "CAPACITY_KL", "DIAMETER_MM", "LENGTH_MM"),
+            (RO, "TANK_NO", "PRODUCT", "CAPACITY_KL", "DIAMETER_MM", "LENGTH_MM"),
             "Underground tanks and the dimensions used for dip calibration.",
         ),
         FileFormat(
             FileKind.NOZZLE_MASTER,
             "Nozzle master",
-            (SAP, "DU_NO", "NOZZLE_NO", "PRODUCT", "TANK_NO"),
+            (RO, "DU_NO", "NOZZLE_NO", "PRODUCT", "TANK_NO"),
             "Dispensing units and nozzles, and the tank each nozzle draws from.",
         ),
         FileFormat(
             FileKind.LICENCE_REGISTER,
             "Statutory licence register",
-            (SAP, "LICENCE_TYPE", "LICENCE_NO", "ISSUED_ON", "VALID_UPTO"),
+            (RO, "LICENCE_TYPE", "LICENCE_NO", "ISSUED_ON", "VALID_UPTO"),
             "PESO storage licence, Legal Metrology stamping, fire NOC, pollution consent.",
         ),
         FileFormat(
@@ -89,7 +90,7 @@ FORMATS: dict[FileKind, FileFormat] = {
             (
                 "RECEIPT_DATE",
                 "RECEIPT_TIME",
-                SAP,
+                RO,
                 "INVOICE_NO",
                 "INVOICE_DATE",
                 "TT_NO",
@@ -110,7 +111,7 @@ FORMATS: dict[FileKind, FileFormat] = {
             (
                 "INDENT_NO",
                 "INDENT_DATE",
-                SAP,
+                RO,
                 "PRODUCT",
                 "QTY_KL",
                 "STATUS",
@@ -125,7 +126,7 @@ FORMATS: dict[FileKind, FileFormat] = {
             "Daily sales report (DSR)",
             (
                 "BUSINESS_DATE",
-                SAP,
+                RO,
                 "DU_NO",
                 "NOZZLE_NO",
                 "PRODUCT",
@@ -144,7 +145,7 @@ FORMATS: dict[FileKind, FileFormat] = {
             (
                 "DATE",
                 "TIME",
-                SAP,
+                RO,
                 "TANK_NO",
                 "PRODUCT",
                 "DIP_MM",

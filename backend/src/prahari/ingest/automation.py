@@ -39,7 +39,7 @@ class NozzleTotal(BaseModel):
 class SiteSnapshot(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
 
-    site_id: str = Field(min_length=1, max_length=16, description="The outlet's SAP customer code.")
+    site_id: str = Field(pattern=r"^\d{6}$", description="The outlet's 6-digit RO code.")
     observed_at: AwareDatetime
     tanks: list[TankLevel] = Field(default_factory=list, max_length=20)
     nozzles: list[NozzleTotal] = Field(default_factory=list, max_length=64)
@@ -60,7 +60,7 @@ class BatchResult(BaseModel):
 
 def store_batch(session: Session, batch: AutomationBatch) -> BatchResult:
     """Validate references and store readings. Unknown sites/tanks/nozzles are reported, not fatal."""
-    outlets = {sap: oid for sap, oid in session.execute(select(Outlet.sap_code, Outlet.id))}
+    outlets = {code: oid for code, oid in session.execute(select(Outlet.code, Outlet.id))}
     tanks = {(t.outlet_id, t.tank_no): (t.id, t.capacity_kl * 1000) for t in session.scalars(select(Tank))}
     nozzles = {(n.outlet_id, n.nozzle_no): n.id for n in session.scalars(select(Nozzle))}
     tank_rows: list[dict[str, Any]] = []

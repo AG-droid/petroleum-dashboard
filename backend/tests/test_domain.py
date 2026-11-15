@@ -9,7 +9,8 @@ import pytest
 
 from prahari.domain.calibration import dip_from_volume, standard_dimensions, volume_from_dip
 from prahari.domain.demand import HOURLY, sales_fraction_since
-from prahari.domain.products import HSD, MS, XP, normalise_product
+from prahari.domain.outlets import market_category, normalise_market_class
+from prahari.domain.products import CBG, CNG, HSD, MS, P100, PD, PRODUCT_UNITS, XP, normalise_product
 from prahari.domain.time import business_date
 from prahari.ingest import parse
 from prahari.ingest.formats import FORMATS, FileKind, detect_kind
@@ -62,7 +63,20 @@ def test_demand_profile() -> None:
 
 
 @pytest.mark.parametrize(
-    ("raw", "code"), [("MS", MS), ("petrol", MS), ("High-Speed Diesel", HSD), ("PMS", XP)]
+    ("raw", "code"),
+    [
+        ("MS", MS),
+        ("petrol", MS),
+        ("High-Speed Diesel", HSD),
+        ("PMS", XP),
+        # Oil-company MIS labels map to brand-neutral codes
+        ("MS-R", MS),
+        ("HSD-R", HSD),
+        ("XP95", XP),
+        ("XP100", P100),
+        ("XG", PD),
+        ("cng", CNG),
+    ],
 )
 def test_product_aliases(raw: str, code: str) -> None:
     assert normalise_product(raw) == code
@@ -71,6 +85,38 @@ def test_product_aliases(raw: str, code: str) -> None:
 def test_unknown_product() -> None:
     with pytest.raises(ValueError, match="unknown product"):
         normalise_product("kerosene")
+
+
+def test_ro_codes_are_six_digits() -> None:
+    assert parse.ro_code(990104.0) == "990104"  # Excel stores codes as numbers
+    assert parse.ro_code(" 990144 ") == "990144"
+    for bad in ("GGN-104", "99010", "9901040", "99O104"):
+        with pytest.raises(ValueError, match="6-digit RO code"):
+            parse.ro_code(bad)
+
+
+@pytest.mark.parametrize(
+    ("raw", "canonical", "category"),
+    [
+        ("D1-Highway", "D1-Highway", "Highway"),
+        ("d2 highway", "D2-Highway", "Highway"),
+        ("A URBAN", "A-Urban", "Urban"),
+        ("E_Rural", "E-Rural", "Rural"),
+    ],
+)
+def test_class_of_market(raw: str, canonical: str, category: str) -> None:
+    assert normalise_market_class(raw) == canonical
+    assert market_category(canonical) == category
+
+
+def test_unknown_class_of_market() -> None:
+    with pytest.raises(ValueError, match="not a class of market"):
+        normalise_market_class("Highway")
+
+
+def test_gases_are_sold_by_weight() -> None:
+    assert PRODUCT_UNITS[CNG] == PRODUCT_UNITS[CBG] == "kg"
+    assert PRODUCT_UNITS[MS] == PRODUCT_UNITS[PD] == "L"
 
 
 def test_parsers() -> None:

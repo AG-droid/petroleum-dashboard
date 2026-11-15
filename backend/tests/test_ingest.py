@@ -29,9 +29,9 @@ def test_generated_data_is_internally_consistent(session: Session, settings: Set
     """Stock books balance: only the scripted variation outlet exceeds the limit."""
     states = compute_states(session, settings)
     over = {s.outlet.code for s in states if (s.variation_pct or 0) > settings.rules.variation_pct}
-    assert over == {"GGN-121"}
+    assert over == {"990121"}
     assert all(s.variation_pct is not None for s in states)
-    assert all(abs(s.variation_pct or 0) < 0.5 for s in states if s.outlet.code != "GGN-121")
+    assert all(abs(s.variation_pct or 0) < 0.5 for s in states if s.outlet.code != "990121")
 
 
 def _write_dsr(path: Path, rows: list[list[object]]) -> Path:
@@ -45,11 +45,11 @@ def _write_dsr(path: Path, rows: list[list[object]]) -> Path:
 def test_bad_rows_are_reported_and_good_rows_load(
     session: Session, settings: Settings, tmp_path: Path
 ) -> None:
-    sap = session.scalar(select(Outlet.sap_code).where(Outlet.code == "GGN-101"))
+    sap = "990101"  # the outlet's RO code: the key in every file
     good = ["01-01-2026", sap, 1, 1, "MS", 1000, 1105, 5, 100, 100, 10000]
     rows = [
         good,
-        ["01-01-2026", "99999999", 1, 1, "MS", 1000, 1105, 5, 100, 100, 10000],  # unknown outlet
+        ["01-01-2026", "999999", 1, 1, "MS", 1000, 1105, 5, 100, 100, 10000],  # unknown outlet
         ["01-01-2026", sap, 1, 1, "MS", 1105, 1000, 5, 100, 100, 10000],  # meter went backwards
         ["01-01-2026", sap, 1, 1, "MS", 1000, 1105, 5, 90, 100, 10000],  # net doesn't add up
         ["32-01-2026", sap, 1, 1, "MS", 1000, 1105, 5, 100, 100, 10000],  # not a date
@@ -98,13 +98,13 @@ def test_duplicate_key_in_one_file_is_a_row_error(
 ) -> None:
     from prahari.models import Nozzle
 
-    outlet = session.scalar(select(Outlet).where(Outlet.code == "GGN-101"))
+    outlet = session.scalar(select(Outlet).where(Outlet.code == "990101"))
     assert outlet is not None
     n1, n2 = [n for n in session.scalars(select(Nozzle).where(Nozzle.outlet_id == outlet.id))][:2]
-    row = ["01-01-2026", outlet.sap_code, n1.du_no, n1.nozzle_no, n1.product_code, 1000, 1105, 5, 100, 100, 1]
+    row = ["01-01-2026", outlet.code, n1.du_no, n1.nozzle_no, n1.product_code, 1000, 1105, 5, 100, 100, 1]
     other = [
         "01-01-2026",
-        outlet.sap_code,
+        outlet.code,
         n2.du_no,
         n2.nozzle_no,
         n2.product_code,
@@ -123,7 +123,7 @@ def test_duplicate_key_in_one_file_is_a_row_error(
 def test_overlong_codes_and_infinite_numbers_are_row_errors(
     session: Session, settings: Settings, tmp_path: Path
 ) -> None:
-    sap = session.scalar(select(Outlet.sap_code).where(Outlet.code == "GGN-101"))
+    sap = "990101"  # the outlet's RO code: the key in every file
     rows = [
         ["01-01-2026", "1" * 20, 1, 1, "MS", 1000, 1105, 5, 100, 100, 10000],
         ["01-01-2026", sap, 1, 1, "MS", "inf", "inf", 5, 0, 100, 10000],
@@ -138,7 +138,7 @@ def test_water_is_not_counted_as_product(session: Session, settings: Settings, t
     from prahari.domain.calibration import volume_from_dip
     from prahari.models import Tank
 
-    outlet = session.scalar(select(Outlet).where(Outlet.code == "GGN-101"))
+    outlet = session.scalar(select(Outlet).where(Outlet.code == "990101"))
     assert outlet is not None
     tank: Tank = outlet.tanks[0]
     path = tmp_path / "dip.csv"
@@ -146,7 +146,7 @@ def test_water_is_not_counted_as_product(session: Session, settings: Settings, t
         w = csv.writer(fh)
         w.writerow(FORMATS[FileKind.DIP_REGISTER].columns)
         w.writerow(
-            ["01-01-2026", "06:00", outlet.sap_code, tank.tank_no, tank.product_code, 1200, 50, 25, 830, 838]
+            ["01-01-2026", "06:00", outlet.code, tank.tank_no, tank.product_code, 1200, 50, 25, 830, 838]
         )
     assert import_file(session, path, settings).status == "succeeded"
     reading = session.scalar(
@@ -205,7 +205,7 @@ def test_duplicate_codes_are_row_errors_not_internal_errors(
     ws.append(list(FORMATS[FileKind.RO_MASTER].columns))
     base = [
         "Gurugram",
-        "Urban",
+        "B-Urban",
         "DODO",
         "N",
         "Sector 1",
@@ -219,9 +219,62 @@ def test_duplicate_codes_are_row_errors_not_internal_errors(
         "",
         2001,
     ]
-    ws.append(["99000001", "NEW-1", "One", *base])
-    ws.append(["99000002", "NEW-1", "Two", *base])  # same RO_REF, different SAP code
+    ws.append(["990901", "S-1", "One", *base])
+    ws.append(["990901", "S-2", "Two", *base])  # same RO code, different SAP code
     wb.save(tmp_path / "ro.xlsx")
     job = import_file(session, tmp_path / "ro.xlsx", settings)
     assert (job.rows_accepted, job.rows_rejected) == (1, 1)
     assert (job.errors or [{}])[0]["message"] == "duplicate of row 2"
+
+
+def test_ro_master_keys_on_ro_code_and_checks_class_of_market(
+    session: Session, settings: Settings, tmp_path: Path
+) -> None:
+    """Blank SAP codes never clash; a bad RO code or class of market is a row error."""
+    from openpyxl import Workbook
+
+    def row(ro: str, market: str) -> list[object]:
+        return [
+            ro,
+            "",
+            "Outlet " + ro,
+            "Gurugram",
+            market,
+            "DODO",
+            "N",
+            "Sector 1",
+            "",
+            "",
+            28.45,
+            77.03,
+            "Y",
+            300,
+            "Test Dealer",
+            "",
+            2001,
+        ]
+
+    wb = Workbook()
+    ws = wb.active
+    assert ws is not None
+    ws.append(list(FORMATS[FileKind.RO_MASTER].columns))
+    ws.append(row("990801", "D2 Highway"))
+    ws.append(row("990802", "c-urban"))
+    ws.append(row("GGN-1", "A-Urban"))  # not a 6-digit RO code
+    ws.append(row("990804", "Highway"))  # not a class of market
+    wb.save(tmp_path / "ro.xlsx")
+    job = import_file(session, tmp_path / "ro.xlsx", settings)
+    assert (job.rows_accepted, job.rows_rejected) == (2, 2)
+    errors = {e["row"]: e["message"] for e in job.errors or []}
+    assert "6-digit RO code" in errors[4] and "class of market" in errors[5]
+    added = {o.code: o for o in session.scalars(select(Outlet).where(Outlet.code.in_(["990801", "990802"])))}
+    assert added["990801"].market_class == "D2-Highway" and added["990801"].category == "Highway"
+    assert added["990802"].market_class == "C-Urban" and added["990802"].sap_code is None
+
+
+def test_product_master_accepts_gases_without_density(session: Session) -> None:
+    from prahari.models import Product
+
+    units = dict(session.execute(select(Product.code, Product.unit)).tuples().all())
+    assert units["CNG"] == "kg" and units["MS"] == "L"
+    assert session.scalar(select(Product.density_min).where(Product.code == "CNG")) is None

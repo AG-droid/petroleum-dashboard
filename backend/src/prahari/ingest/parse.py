@@ -6,6 +6,7 @@ import math
 from datetime import date, datetime, time
 from typing import Any
 
+from prahari.domain.outlets import normalise_market_class, normalise_ro_code
 from prahari.domain.products import normalise_product
 
 _DATE_FORMATS = ("%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y", "%Y-%m-%d", "%d-%b-%Y")
@@ -54,6 +55,23 @@ def code(v: Any, *, max_len: int = 24) -> str:
     if isinstance(v, float) and v.is_integer():
         v = int(v)
     return text(v, max_len=max_len)
+
+
+def optional_code(v: Any, *, max_len: int = 24) -> str | None:
+    """An identifier that may be left blank."""
+    if v is None or str(v).strip() == "":
+        return None
+    return code(v, max_len=max_len)
+
+
+def ro_code(v: Any) -> str:
+    """A 6-digit RO code (Excel may hold it as the number 990104.0)."""
+    return normalise_ro_code(code(v, max_len=16))
+
+
+def market_class(v: Any) -> str:
+    """Class of market in canonical form (A-Urban … E-Rural)."""
+    return normalise_market_class(text(v))
 
 
 def day(v: Any) -> date:

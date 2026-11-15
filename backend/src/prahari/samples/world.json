@@ -1,13 +1,13 @@
 {
  "schema": 1,
  "note": "Synthetic data. Every outlet, dealer, number and plate is fictional.",
- "exported_at": "2026-11-15T12:45:05.793Z",
+ "exported_at": "2026-11-15T13:47:01.987Z",
  "meta": {
-  "salesArea": "Gurugram Sales Area",
-  "division": "Gurugram Division",
+  "salesArea": "Gurugram Retail Sales Area",
+  "division": "Gurugram Divisional Office",
   "state": "Haryana State Office",
-  "officer": "Sales Officer, Gurugram SA",
-  "generatedAt": 1794746705793
+  "officer": "Sales Officer, Gurugram Retail Sales Area",
+  "generatedAt": 1794750421987
  },
  "products": [
   {
@@ -89,20 +89,21 @@
   ]
  ],
  "stories": {
-  "dryout": "GGN-104",
-  "covered": "GGN-114",
-  "variation": "GGN-121",
-  "density": "GGN-109",
-  "licence": "GGN-131",
-  "offline": "GGN-127",
-  "decline": "GGN-102",
-  "stamp": "GGN-118"
+  "dryout": "990104",
+  "covered": "990114",
+  "variation": "990121",
+  "density": "990109",
+  "licence": "990131",
+  "offline": "990127",
+  "decline": "990102",
+  "stamp": "990118"
  },
  "outlets": [
   {
-   "code": "GGN-101",
+   "code": "990101",
    "name": "National Fuel Point",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Sirhaul",
@@ -503,9 +504,10 @@
    ]
   },
   {
-   "code": "GGN-102",
+   "code": "990102",
    "name": "Maa Fuel Point",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "IFFCO Chowk",
@@ -881,9 +883,10 @@
    ]
   },
   {
-   "code": "GGN-103",
+   "code": "990103",
    "name": "Gurukul Service Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Rajiv Chowk",
@@ -1273,9 +1276,10 @@
    ]
   },
   {
-   "code": "GGN-104",
+   "code": "990104",
    "name": "Royal Service Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Rajiv Chowk",
@@ -1641,9 +1645,10 @@
    ]
   },
   {
-   "code": "GGN-105",
+   "code": "990105",
    "name": "Shiv Fuel Point",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Hero Honda Chowk",
@@ -2072,9 +2077,10 @@
    ]
   },
   {
-   "code": "GGN-106",
+   "code": "990106",
    "name": "Jai Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "Kherki Daula",
@@ -2478,9 +2484,10 @@
    ]
   },
   {
-   "code": "GGN-107",
+   "code": "990107",
    "name": "Haryana Auto Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "Manesar",
@@ -2828,9 +2835,10 @@
    ]
   },
   {
-   "code": "GGN-108",
+   "code": "990108",
    "name": "Royal Fuel Centre",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Bilaspur Chowk",
@@ -3231,9 +3239,10 @@
    ]
   },
   {
-   "code": "GGN-109",
+   "code": "990109",
    "name": "Krishna Filling Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "CODO",
    "ksk": false,
    "locality": "Bilaspur Chowk",
@@ -3676,9 +3685,10 @@
    ]
   },
   {
-   "code": "GGN-110",
+   "code": "990110",
    "name": "Kesar Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "COCO",
    "ksk": false,
    "locality": "Dharuhera",
@@ -4079,9 +4089,10 @@
    ]
   },
   {
-   "code": "GGN-111",
+   "code": "990111",
    "name": "Cyber Filling Station",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "CODO",
    "ksk": false,
    "locality": "Kapriwas",
@@ -4457,9 +4468,10 @@
    ]
   },
   {
-   "code": "GGN-112",
+   "code": "990112",
    "name": "Aravali Fuels",
    "category": "Highway",
+   "market_class": "D1-Highway",
    "type": "DODO",
    "ksk": false,
    "locality": "Bawal",
@@ -4888,9 +4900,10 @@
    ]
   },
   {
-   "code": "GGN-113",
+   "code": "990113",
    "name": "Ganpati Fuels",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Subhash Chowk",
@@ -5255,9 +5268,10 @@
    ]
   },
   {
-   "code": "GGN-114",
+   "code": "990114",
    "name": "Gurukul Fuels",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Badshahpur",
@@ -5636,9 +5650,10 @@
    ]
   },
   {
-   "code": "GGN-115",
+   "code": "990115",
    "name": "Kanha Fuel Centre",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Vatika Chowk",
@@ -5964,9 +5979,10 @@
    ]
   },
   {
-   "code": "GGN-116",
+   "code": "990116",
    "name": "Ganpati Filling Station",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Bhondsi",
@@ -6345,9 +6361,10 @@
    ]
   },
   {
-   "code": "GGN-117",
+   "code": "990117",
    "name": "Durga Petroleum",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Raisina",
@@ -6726,9 +6743,10 @@
    ]
   },
   {
-   "code": "GGN-118",
+   "code": "990118",
    "name": "Aravali Petroleum",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sohna",
@@ -7107,9 +7125,10 @@
    ]
   },
   {
-   "code": "GGN-119",
+   "code": "990119",
    "name": "Shiv Fuel Centre",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sikanderpur",
@@ -7502,9 +7521,10 @@
    ]
   },
   {
-   "code": "GGN-120",
+   "code": "990120",
    "name": "Balaji Petroleum",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Gwal Pahari",
@@ -7883,9 +7903,10 @@
    ]
   },
   {
-   "code": "GGN-121",
+   "code": "990121",
    "name": "Cyber Fuel Centre",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Bandhwari",
@@ -8211,9 +8232,10 @@
    ]
   },
   {
-   "code": "GGN-122",
+   "code": "990122",
    "name": "Kesar Petroleum",
    "category": "Urban",
+   "market_class": "C-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Mangar",
@@ -8553,9 +8575,10 @@
    ]
   },
   {
-   "code": "GGN-123",
+   "code": "990123",
    "name": "Balaji Auto Fuels",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Basai",
@@ -8881,9 +8904,10 @@
    ]
   },
   {
-   "code": "GGN-124",
+   "code": "990124",
    "name": "Sunrise Service Station",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Garhi Harsaru",
@@ -9209,9 +9233,10 @@
    ]
   },
   {
-   "code": "GGN-125",
+   "code": "990125",
    "name": "Royal Auto Fuels",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Sultanpur",
@@ -9537,9 +9562,10 @@
    ]
   },
   {
-   "code": "GGN-126",
+   "code": "990126",
    "name": "Maa Kisan Seva Kendra",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "CODO",
    "ksk": true,
    "locality": "Jamalpur",
@@ -9851,9 +9877,10 @@
    ]
   },
   {
-   "code": "GGN-127",
+   "code": "990127",
    "name": "Gurukul Auto Fuels",
    "category": "Rural",
+   "market_class": "E-Rural",
    "type": "DODO",
    "ksk": false,
    "locality": "Pataudi",
@@ -10165,9 +10192,10 @@
    ]
   },
   {
-   "code": "GGN-128",
+   "code": "990128",
    "name": "Kanha Filling Station",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sector 37D",
@@ -10560,9 +10588,10 @@
    ]
   },
   {
-   "code": "GGN-129",
+   "code": "990129",
    "name": "Sai Fuel Centre",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sector 99",
@@ -10955,9 +10984,10 @@
    ]
   },
   {
-   "code": "GGN-130",
+   "code": "990130",
    "name": "Shyam Fuel Point",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Sector 106",
@@ -11350,9 +11380,10 @@
    ]
   },
   {
-   "code": "GGN-131",
+   "code": "990131",
    "name": "Sai Filling Station",
    "category": "Urban",
+   "market_class": "B-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Bajghera",
@@ -11678,9 +11709,10 @@
    ]
   },
   {
-   "code": "GGN-132",
+   "code": "990132",
    "name": "Maa Service Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "DLF Phase 2",
@@ -12059,9 +12091,10 @@
    ]
   },
   {
-   "code": "GGN-133",
+   "code": "990133",
    "name": "Shyam Filling Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sector 14",
@@ -12426,9 +12459,10 @@
    ]
   },
   {
-   "code": "GGN-134",
+   "code": "990134",
    "name": "Cyber Petroleum",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sector 29",
@@ -12821,9 +12855,10 @@
    ]
   },
   {
-   "code": "GGN-135",
+   "code": "990135",
    "name": "Jai Filling Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Udyog Vihar",
@@ -13230,9 +13265,10 @@
    ]
   },
   {
-   "code": "GGN-136",
+   "code": "990136",
    "name": "Om Service Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Palam Vihar",
@@ -13572,9 +13608,10 @@
    ]
   },
   {
-   "code": "GGN-137",
+   "code": "990137",
    "name": "Sunrise Fuels",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "South City",
@@ -13953,9 +13990,10 @@
    ]
   },
   {
-   "code": "GGN-138",
+   "code": "990138",
    "name": "Krishna Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "Sector 56",
@@ -14295,9 +14333,10 @@
    ]
   },
   {
-   "code": "GGN-139",
+   "code": "990139",
    "name": "Maa Filling Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sushant Lok",
@@ -14665,9 +14704,10 @@
    ]
   },
   {
-   "code": "GGN-140",
+   "code": "990140",
    "name": "Ganpati Service Station",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Sector 45",
@@ -15001,9 +15041,10 @@
    ]
   },
   {
-   "code": "GGN-141",
+   "code": "990141",
    "name": "Balaji Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "New Railway Road",
@@ -15382,9 +15423,10 @@
    ]
   },
   {
-   "code": "GGN-142",
+   "code": "990142",
    "name": "Kanha Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "CODO",
    "ksk": false,
    "locality": "Sector 10A",
@@ -15763,9 +15805,10 @@
    ]
   },
   {
-   "code": "GGN-143",
+   "code": "990143",
    "name": "Millennium Fuel Centre",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "COCO",
    "ksk": false,
    "locality": "Sector 31",
@@ -16105,9 +16148,10 @@
    ]
   },
   {
-   "code": "GGN-144",
+   "code": "990144",
    "name": "Hanuman Fuel Point",
    "category": "Urban",
+   "market_class": "A-Urban",
    "type": "DODO",
    "ksk": false,
    "locality": "MG Road",

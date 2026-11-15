@@ -30,12 +30,51 @@ from zoneinfo import ZoneInfo
 from openpyxl import Workbook
 
 from prahari.domain.calibration import dip_from_volume, standard_dimensions, volume_from_dip
-from prahari.domain.products import HSD, MS, PRODUCT_NAMES
+from prahari.domain.products import CBG, CNG, E85, E100, HSD, MS, P100, PD, PRODUCT_NAMES
 from prahari.domain.time import business_date, business_day_start
-from prahari.ingest.formats import FORMATS, SAP, FileKind
+from prahari.ingest.formats import FORMATS, RO, FileKind
 
 WORLD_PATH = Path(__file__).with_name("world.json")
-SALES_AREA_CODE = "GGN-SA"
+SALES_AREA_CODE = "GGN-RSA"  # Gurugram Retail Sales Area
+
+# Grades the area's product master lists although no demo outlet sells them yet, so their exports
+# import cleanly. Demo prices; gases are priced per kg and have no density check.
+OTHER_PRODUCTS: list[dict[str, Any]] = [
+    {
+        "code": P100,
+        "name": PRODUCT_NAMES[P100],
+        "unit": "L",
+        "price_per_l": 160.0,
+        "density_min": 730.0,
+        "density_max": 770.0,
+    },
+    {
+        "code": PD,
+        "name": PRODUCT_NAMES[PD],
+        "unit": "L",
+        "price_per_l": 92.5,
+        "density_min": 820.0,
+        "density_max": 845.0,
+    },
+    {
+        "code": E85,
+        "name": PRODUCT_NAMES[E85],
+        "unit": "L",
+        "price_per_l": 85.0,
+        "density_min": 770.0,
+        "density_max": 790.0,
+    },
+    {
+        "code": E100,
+        "name": PRODUCT_NAMES[E100],
+        "unit": "L",
+        "price_per_l": 94.0,
+        "density_min": 785.0,
+        "density_max": 795.0,
+    },
+    {"code": CNG, "name": PRODUCT_NAMES[CNG], "unit": "kg", "price_per_l": 76.5},
+    {"code": CBG, "name": PRODUCT_NAMES[CBG], "unit": "kg", "price_per_l": 76.5},
+]
 TESTING_L_PER_NOZZLE = 5.0  # the daily 5-litre measure test, returned to the tank
 # Deliveries are whole tank-truck compartments (4–5 kL each): part loads, full trucks, two trucks.
 TRUCKLOADS_KL = (4, 6, 8, 9, 12, 16, 20, 24, 32, 36, 40)
@@ -63,10 +102,16 @@ class _OutletPlan:
     """Everything generated for one outlet, before writing files."""
 
     world: dict[str, Any]
-    sap: str
+    sap: str  # SAP sold-to code (an attribute in the RO master)
     tanks: list[dict[str, Any]]
     nozzles: list[dict[str, Any]]
     sales_l: dict[date, dict[str, float]] = field(default_factory=dict)  # product net sales per day
+
+    @property
+    def ro(self) -> str:
+        """The 6-digit RO code: the key in every generated file."""
+        return str(self.world["code"])
+
     stock_l: dict[date, dict[str, float]] = field(default_factory=dict)  # product stock each morning
     receipts: list[_Receipt] = field(default_factory=list)
 
@@ -233,7 +278,7 @@ def _receipts_and_indents(
                     [
                         local.date(),
                         local.strftime("%H:%M"),
-                        plan.sap,
+                        plan.ro,
                         inv,
                         r.business_date,
                         tt,
@@ -251,7 +296,7 @@ def _receipts_and_indents(
                 [
                     ind,
                     r.business_date - timedelta(days=1),
-                    plan.sap,
+                    plan.ro,
                     _file_product(r.product),
                     r.qty_kl,
                     "Delivered",
@@ -268,7 +313,7 @@ def _receipts_and_indents(
                 [
                     f"IND{seq - 2_599_000}",
                     today,
-                    plan.sap,
+                    plan.ro,
                     _file_product(pi["product"]),
                     pi["qty"],
                     "On hold",
@@ -282,7 +327,7 @@ def _receipts_and_indents(
                 [
                     f"IND{seq - 2_598_000}",
                     today,
-                    plan.sap,
+                    plan.ro,
                     _file_product(MS),
                     12,
                     "Dispatched",
@@ -324,7 +369,7 @@ class _Writer:
         ws = wb.active
         assert ws is not None
         ws.title = kind.value.upper()
-        ws.append([f"Gurugram Sales Area: {fmt.title}"])
+        ws.append([f"Gurugram Retail Sales Area: {fmt.title}"])
         ws.append([f"Generated {self.stamp} · SYNTHETIC DEMO DATA"])
         ws.append([])
         ws.append(list(fmt.columns))
@@ -347,7 +392,7 @@ class _Writer:
             "kind": FileKind.SALES_AREA.value,
             "code": SALES_AREA_CODE,
             "name": world["meta"]["salesArea"],
-            "division": world["meta"]["division"],
+            "divisional_office": world["meta"]["division"],
             "state_office": world["meta"]["state"],
             "boundary": world["area"],
             "depots": [
@@ -364,12 +409,14 @@ class _Writer:
                 {
                     "code": p["key"],
                     "name": PRODUCT_NAMES.get(p["key"], p["name"]),
+                    "unit": "L",
                     "price_per_l": p["price"],
                     "density_min": p["density_range"][0],
                     "density_max": p["density_range"][1],
                 }
                 for p in world["products"]
-            ],
+            ]
+            + OTHER_PRODUCTS,
         }
         path.write_text(json.dumps(doc, indent=1) + "\n")
         return path
@@ -380,11 +427,11 @@ class _Writer:
             w = p.world
             rows.append(
                 [
+                    p.ro,
                     p.sap,
-                    w["code"],
                     w["name"],
                     "Gurugram",
-                    w["category"],
+                    w["market_class"],
                     w["type"],
                     "Y" if w["ksk"] else "N",
                     w["locality"],
@@ -404,7 +451,7 @@ class _Writer:
     def tank_master(self, plans: list[_OutletPlan]) -> Path:
         rows = [
             [
-                p.sap,
+                p.ro,
                 t["tank_no"],
                 _file_product(t["product"]),
                 t["capacity_kl"],
@@ -421,7 +468,7 @@ class _Writer:
         for p in plans:
             for n in p.nozzles:
                 tank = next(t for t in p.tanks if t["product"] == n["product"])
-                rows.append([p.sap, n["du_no"], n["nozzle_no"], _file_product(n["product"]), tank["tank_no"]])
+                rows.append([p.ro, n["du_no"], n["nozzle_no"], _file_product(n["product"]), tank["tank_no"]])
         return self._csv(self._path("00_master", "NOZZLE_MASTER.csv"), FileKind.NOZZLE_MASTER, rows)
 
     def licences(self, plans: list[_OutletPlan], today: date, rng: random.Random) -> Path:
@@ -431,7 +478,7 @@ class _Writer:
                 valid = today + timedelta(days=round(p.world["licences"][key]["due_in_days"]))
                 issued = valid - timedelta(days=365 * rng.randint(1, 5))
                 rows.append(
-                    [p.sap, ltype, f"{ltype}/HR/{issued.year}/{rng.randint(10000, 99999)}", issued, valid]
+                    [p.ro, ltype, f"{ltype}/HR/{issued.year}/{rng.randint(10000, 99999)}", issued, valid]
                 )
         return self._csv(self._path("01_compliance", "LICENCE_REGISTER.csv"), FileKind.LICENCE_REGISTER, rows)
 
@@ -448,7 +495,7 @@ class _Writer:
         self, plans: list[_OutletPlan], bdays: list[date], prices: dict[str, float], rng: random.Random
     ) -> list[Path]:
         # Walk totalisers backwards from today's reading so the last closing equals the world value.
-        closing = {(p.sap, n["nozzle_no"]): float(n["totalizer_l"]) for p in plans for n in p.nozzles}
+        closing = {(p.ro, n["nozzle_no"]): float(n["totalizer_l"]) for p in plans for n in p.nozzles}
         per_day: dict[date, list[list[Any]]] = defaultdict(list)
         for d in reversed(bdays):
             for p in plans:
@@ -458,12 +505,12 @@ class _Writer:
                     total_w = sum(weights)
                     for n, wt in zip(nz, weights, strict=True):
                         net = round(sold * wt / total_w, 2)
-                        close = closing[(p.sap, n["nozzle_no"])]
+                        close = closing[(p.ro, n["nozzle_no"])]
                         opening = round(close - net - TESTING_L_PER_NOZZLE, 2)
                         per_day[d].append(
                             [
                                 d,
-                                p.sap,
+                                p.ro,
                                 n["du_no"],
                                 n["nozzle_no"],
                                 _file_product(prod),
@@ -475,7 +522,7 @@ class _Writer:
                                 round(net * prices[prod], 2),
                             ]
                         )
-                        closing[(p.sap, n["nozzle_no"])] = opening
+                        closing[(p.ro, n["nozzle_no"])] = opening
         return [
             self._xlsx(self._path("03_sales", f"DSR_{d:%Y%m%d}.xlsx"), FileKind.DSR, per_day[d])
             for d in bdays
@@ -517,7 +564,7 @@ class _Writer:
                             [
                                 at.date(),
                                 at.strftime("%H:%M"),
-                                p.sap,
+                                p.ro,
                                 tank["tank_no"],
                                 _file_product(prod),
                                 dip,
@@ -541,8 +588,7 @@ class _Writer:
             w = p.world
             sites.append(
                 {
-                    "sap_code": p.sap,
-                    "code": w["code"],
+                    "ro_code": p.ro,
                     "automated": w["automated"],
                     "online": w["automation_online"],
                     "daily_l": {k: v * 1000 for k, v in w["daily_kl"].items()},
@@ -587,4 +633,4 @@ class _Writer:
         return path
 
 
-__all__ = ["SALES_AREA_CODE", "SAP", "WORLD_PATH", "generate"]
+__all__ = ["RO", "SALES_AREA_CODE", "WORLD_PATH", "generate"]

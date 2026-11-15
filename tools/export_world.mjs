@@ -44,6 +44,7 @@ const world = {
     code: o.id,
     name: o.name,
     category: o.category,
+    market_class: o.marketClass,
     type: o.type,
     ksk: o.ksk,
     locality: o.locality,

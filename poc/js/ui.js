@@ -94,7 +94,7 @@
     $('#btn3d').addEventListener('click', (e) => e.currentTarget.classList.toggle('active', MapView.toggle3D()));
     $('#btnHome').addEventListener('click', () => { UI.closeOutlet(); MapView.home(); });
     $('#searchBtn').addEventListener('click', openPalette);
-    $('#areaSelect').addEventListener('click', () => toast('Only the Gurugram Sales Area is loaded in this demo', 'Other sales areas would appear here'));
+    $('#areaSelect').addEventListener('click', () => toast('Only the Gurugram Retail Sales Area is loaded in this demo', 'Other sales areas would appear here'));
     document.addEventListener('keydown', onKey);
     document.addEventListener('click', (e) => {
       const ol = e.target.closest('[data-outlet]');
@@ -160,7 +160,8 @@
   function renderLeft() {
     $('#leftPanel').innerHTML = `
       <div class="p-head">
-        <div class="p-title">Gurugram Sales Area</div>
+        <div class="p-title">${DB.meta.salesArea}</div>
+        <div class="p-sub faint">${DB.meta.division} · ${DB.meta.state}</div>
         <div class="p-sub" id="lpSub"></div>
       </div>
       <div style="padding:0 18px 16px">
@@ -354,7 +355,7 @@
     $('#odHead').innerHTML = `
       <button class="icon-btn od-close" id="odClose" title="Close">${I.x}</button>
       <div class="od-name">${o.name}</div>
-      <div class="od-meta">${o.locality}, ${o.road} · ${o.category} · <span class="mono">${o.id}</span></div>
+      <div class="od-meta">${o.locality}, ${o.road} · ${o.marketClass} · RO <span class="mono">${o.id}</span></div>
       <div class="od-summary"><span class="dot ${sm.s}"></span><span>${sm.t}</span></div>
       <div class="od-actions">${pa}<button class="btn ${pa ? '' : 'primary'}" data-oact="call">${I.phone}Call dealer</button><button class="btn" data-oact="inspect">${I.cal}${UI.state.planned.has(o.id) ? 'Visit scheduled' : 'Schedule visit'}</button></div>`;
     $('#odClose').onclick = UI.closeOutlet;
@@ -657,7 +658,7 @@
   const COLS = [
     { k: 'name', l: 'Outlet', v: (o) => o.name },
     { k: 'status', l: 'Status', v: (o) => ({ crit: 0, off: 1, warn: 2, ok: 3 }[o.m.status]) },
-    { k: 'category', l: 'Type', v: (o) => o.category },
+    { k: 'market', l: 'Class of market', v: (o) => o.marketClass },
     { k: 'today', l: 'Sold today', r: true, v: (o) => o.m.todayL },
     { k: 'ach', l: 'Month vs target', r: true, v: (o) => o.m.ach },
     { k: 'cover', l: 'Lowest stock', r: true, v: (o) => o.m.minDays },
@@ -665,7 +666,7 @@
     { k: 'insp', l: 'Last visit', r: true, v: (o) => -o.compliance.lastInspection },
   ];
   function renderOutletsView(ov) {
-    ov.innerHTML = head('Outlets', `${outlets.length} retail outlets in the Gurugram Sales Area`) + `
+    ov.innerHTML = head('Outlets', `${outlets.length} retail outlets in the ${DB.meta.salesArea}`) + `
       <div class="ov-body" style="display:flex;flex-direction:column;padding-bottom:0">
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
           <input class="input" id="olQ" placeholder="Filter by name, place or dealer" style="width:260px" value="${UI.state.outletQuery}">
@@ -690,7 +691,7 @@
     $('#olCount').textContent = `${rows.length} shown`;
     tb.innerHTML = rows.map((o) => {
       const m = o.m, days = Math.floor((Date.now() - o.compliance.lastInspection) / 86400000);
-      return `<tr class="row" data-outlet="${o.id}"><td class="l">${o.name}<span class="sub-id">${o.locality}</span></td><td><span class="status ${m.status}">${ST_TXT[m.status]}</span></td><td>${o.category}</td>
+      return `<tr class="row" data-outlet="${o.id}"><td class="l">${o.name}<span class="sub-id">RO ${o.id} · ${o.locality}</span></td><td><span class="status ${m.status}">${ST_TXT[m.status]}</span></td><td>${o.marketClass}</td>
         <td class="r">${fmt.kl(m.todayL / 1000)} kL</td><td class="r ${achCls(m.ach)}">${fmt.pct(m.ach)}</td><td class="r ${coverCls(m.minDays)}">${fmt.kl(m.minDays)} days</td>
         <td class="r"><div class="minibar" style="justify-content:flex-end"><div class="b"><i style="width:${m.score}%;background:${ST_HEX[m.status]}"></i></div><span style="width:22px">${m.score}</span></div></td>
         <td class="r ${days > 45 ? 'c-warn' : ''}">${days} days ago</td></tr>`;
@@ -796,7 +797,7 @@
     const ours = outlets.reduce((a, o) => a + o.daily, 0);
     const brands = ['Brand B', 'Brand C', 'Private P'].map((b, i) => ({ label: b, value: competitors.filter((c) => c.brand === b).reduce((a, c) => a + c.estDaily, 0), color: ['#b48ead', '#d08770', '#5c6168'][i] }));
     const share = ours / (ours + brands.reduce((a, b) => a + b.value, 0));
-    const cats = ['Highway', 'Urban', 'Rural'].map((c) => { const os = outlets.filter((o) => o.category === c); return { label: c, value: os.reduce((a, o) => a + o.m.mtdKL, 0) / os.reduce((a, o) => a + o.m.mtdTarget, 0) * 100, color: '#7aa7ff' }; });
+    const cats = [...new Set(outlets.map((o) => o.marketClass))].sort().map((c) => { const os = outlets.filter((o) => o.marketClass === c); return { label: c, value: os.reduce((a, o) => a + o.m.mtdKL, 0) / os.reduce((a, o) => a + o.m.mtdTarget, 0) * 100, color: '#7aa7ff' }; });
     const bottom = outlets.slice().sort((a, b) => a.m.ach - b.m.ach).slice(0, 10);
     ov.innerHTML = head('Performance', 'Sales, targets and market position over the last 30 days') + `
       <div class="ov-body">
@@ -808,7 +809,7 @@
         <div class="grid-3 mt">
           <div class="card"><div class="card-title">Sales by fuel</div><div class="card-sub">Last 30 days</div><canvas class="chart" id="anMix"></canvas></div>
           <div class="card"><div class="card-title">Market share</div><div class="card-sub">Estimated, against competitor outlets</div><canvas class="chart" id="anShare"></canvas></div>
-          <div class="card"><div class="card-title">By outlet type</div><div class="card-sub">This month, % of target</div><canvas class="chart" id="anCat"></canvas></div>
+          <div class="card"><div class="card-title">By class of market</div><div class="card-sub">This month, % of target</div><canvas class="chart" id="anCat"></canvas></div>
         </div>
       </div>`;
     bindClose(ov);

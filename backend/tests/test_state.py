@@ -101,7 +101,7 @@ def test_before_todays_dip_yesterdays_dip_is_projected_across_the_day(
 
 
 def test_quiet_tank_gauge_is_projected_not_trusted(session: Session, settings: Settings) -> None:
-    outlet = session.scalar(select(Outlet).where(Outlet.code == "GGN-101"))
+    outlet = session.scalar(select(Outlet).where(Outlet.code == "990101"))
     assert outlet is not None and outlet.is_automated
     t = outlet.tanks[0]
     noon = _today_start(settings) + timedelta(hours=6)
