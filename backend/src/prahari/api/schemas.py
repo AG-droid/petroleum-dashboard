@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from prahari.domain.products import normalise_product
 
 
 class _Out(BaseModel):
@@ -177,6 +179,14 @@ class Live(BaseModel):
 
 
 class PriorityIndentIn(BaseModel):
-    product: str | None = Field(None, description="Defaults to the product with the least cover.")
+    product: str | None = Field(
+        None,
+        description="MS, HSD, XP or a common name (petrol, diesel). Defaults to the least-covered product.",
+    )
     qty_kl: float = Field(20, gt=0, le=40)
     note: str | None = Field(None, max_length=240)
+
+    @field_validator("product")
+    @classmethod
+    def _known_product(cls, v: str | None) -> str | None:
+        return normalise_product(v) if v is not None else None  # ValueError → 422

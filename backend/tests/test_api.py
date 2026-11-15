@@ -105,3 +105,25 @@ def test_automation_rejects_unknown_references(client: TestClient) -> None:
         json={"snapshots": [{"site_id": "x", "observed_at": "2026-11-15T10:00:00", "tanks": []}]},
     )
     assert bad.status_code == 422  # timestamps must carry a time zone
+
+
+def test_state_changing_requests_need_the_app_header(client: TestClient) -> None:
+    """A cross-site form or no-cors fetch can't add custom headers, so it is refused (CSRF)."""
+    alert = client.get("/api/v1/alerts").json()[0]
+    r = client.post(f"/api/v1/alerts/{alert['id']}/acknowledge", headers={"X-Prahari-User": ""})
+    assert r.status_code == 403
+    assert client.get("/api/v1/alerts").json()[0]["status"] == "open"
+
+
+def test_priority_indent_accepts_common_product_names(client: TestClient) -> None:
+    first = client.post("/api/v1/outlets/GGN-104/priority-indent", json={"product": "diesel"})
+    assert first.status_code == 201 and first.json()["product_code"] == "HSD"
+    again = client.post("/api/v1/outlets/GGN-104/priority-indent", json={"product": "HSD"})
+    assert again.status_code == 200 and again.json()["id"] == first.json()["id"]
+    assert client.post("/api/v1/outlets/GGN-104/priority-indent", json={"product": "FOO"}).status_code == 422
+
+
+def test_upload_size_limit(client: TestClient, settings: Settings) -> None:
+    settings.max_upload_mb = 1
+    big = b"x" * (1024 * 1024 + 10)
+    assert client.post("/api/v1/imports", files={"file": ("big.csv", big, "text/csv")}).status_code == 413

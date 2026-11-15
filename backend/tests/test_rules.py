@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -64,9 +64,10 @@ def test_rules_are_idempotent(session: Session, settings: Settings) -> None:
 
 def test_priority_indent_turns_dry_out_into_low_stock(session: Session, settings: Settings) -> None:
     today = business_date(datetime.now(UTC), settings.tz, settings.business_day_start_hour)
-    indent = actions.request_priority_indent(
-        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today
+    indent, created = actions.request_priority_indent(
+        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today, valid_for=timedelta(hours=24)
     )
+    assert created
     assert indent.status == "Requested" and indent.is_priority
     run_rules(session, settings)
     active = _active(session)
@@ -77,10 +78,10 @@ def test_priority_indent_turns_dry_out_into_low_stock(session: Session, settings
     )
     assert resolved is not None and resolved.resolved_at is not None  # kept as history
     # Asking twice doesn't create a second indent.
-    again = actions.request_priority_indent(
-        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today
+    again, created = actions.request_priority_indent(
+        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today, valid_for=timedelta(hours=24)
     )
-    assert again.id == indent.id
+    assert again.id == indent.id and not created
     assert session.scalar(select(AuditLog).where(AuditLog.action == "indent.request_priority")) is not None
 
 
@@ -151,8 +152,6 @@ def test_missing_data_does_not_resolve_alerts(session: Session, settings: Settin
 
 
 def test_feed_outage_keeps_automation_alerts(session: Session, settings: Settings) -> None:
-    from datetime import timedelta
-
     from prahari.models import Outlet, TankReading
     from prahari.models.readings import SOURCE_AUTOMATION
 
@@ -176,3 +175,16 @@ def test_feed_outage_keeps_automation_alerts(session: Session, settings: Setting
 
 def test_user_triggered_run_waits_instead_of_skipping(session: Session, settings: Settings) -> None:
     assert not run_rules(session, settings, wait=True).skipped
+
+
+def test_unanswered_request_stops_covering_after_its_validity(session: Session, settings: Settings) -> None:
+    today = business_date(datetime.now(UTC), settings.tz, settings.business_day_start_hour)
+    indent, _ = actions.request_priority_indent(
+        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today, valid_for=timedelta(hours=24)
+    )
+    run_rules(session, settings)
+    assert "low:GGN-104:HSD" in _active(session)
+    indent.created_at = datetime.now(UTC) - timedelta(hours=settings.rules.requested_indent_hours + 1)
+    session.flush()
+    run_rules(session, settings)
+    assert "dry:GGN-104:HSD" in _active(session)  # nobody acted on the request: back to critical

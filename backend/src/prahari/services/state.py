@@ -34,7 +34,7 @@ from prahari.models import (
     TotalizerReading,
 )
 from prahari.models.readings import SOURCE_AUTOMATION, SOURCE_DIP_REGISTER
-from prahari.models.supply import INDENT_COVERING, INDENT_ON_HOLD
+from prahari.models.supply import INDENT_COVERING, INDENT_ON_HOLD, INDENT_REQUESTED
 
 HISTORY_DAYS = 30
 MORNING_DIP_WINDOW = timedelta(hours=3)  # a "morning dip" is taken within 3 h of the day's start
@@ -155,6 +155,7 @@ def compute_states(
         session, list(tanks_by_id), at, at - READING_LOOKBACK, SOURCE_AUTOMATION
     )
     stale = timedelta(minutes=settings.rules.automation_stale_minutes)
+    requested_valid = timedelta(hours=settings.rules.requested_indent_hours)
     last_auto: dict[int, datetime] = {}
     for tank_id, r in latest_auto.items():
         oid = tanks_by_id[tank_id].outlet_id
@@ -220,6 +221,9 @@ def compute_states(
         .where(Indent.outlet_id.in_(outlet_ids), Indent.status.in_(INDENT_COVERING | {INDENT_ON_HOLD}))
         .order_by(Indent.indent_date.desc())
     ):
+        # A request raised in Prahari that nobody has acted on stops counting as "fuel coming".
+        if ind.status == INDENT_REQUESTED and ind.created_at < at - requested_valid:
+            continue
         indents[ind.outlet_id].append(ind)
     receipts: dict[int, list[Receipt]] = defaultdict(list)
     for rc in session.scalars(

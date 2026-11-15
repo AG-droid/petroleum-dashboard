@@ -6,9 +6,10 @@ a priority indent is a *request* to the supply team, not a truck appearing out o
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import or_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from prahari.domain.time import now_utc
@@ -51,39 +52,60 @@ def request_priority_indent(
     product: str,
     qty_kl: float,
     today: date,
+    valid_for: timedelta,
     note: str | None = None,
-) -> Indent:
-    """Raise a priority indent for an outlet/product. Idempotent while one is already open."""
+) -> tuple[Indent, bool]:
+    """Raise a priority indent for an outlet/product; returns ``(indent, created)``.
+
+    Idempotent: while an indent for the product is pending, dispatched, or requested within
+    ``valid_for``, that one is returned. The number is unique per outlet, product and day, and the
+    insert ignores a conflict, so two simultaneous clicks can't create two indents.
+    """
     outlet = session.scalar(select(Outlet).where(Outlet.code == outlet_code))
     if outlet is None:
         raise NotFoundError(f"outlet {outlet_code} not found")
     if product not in {t.product_code for t in outlet.tanks}:
         raise ConflictError(f"{outlet_code} has no {product} tank")
+    fresh_since = now_utc() - valid_for
     existing = session.scalar(
-        select(Indent).where(
-            Indent.outlet_id == outlet.id, Indent.product_code == product, Indent.status.in_(INDENT_COVERING)
+        select(Indent)
+        .where(
+            Indent.outlet_id == outlet.id,
+            Indent.product_code == product,
+            Indent.status.in_(INDENT_COVERING),
+            or_(Indent.status != INDENT_REQUESTED, Indent.created_at >= fresh_since),
         )
+        .order_by(Indent.created_at.desc())
+        .limit(1)
     )
     if existing is not None:
-        return existing
-    seq = (session.scalar(select(func.count(Indent.id)).where(Indent.source == "prahari")) or 0) + 1
-    indent = Indent(
-        indent_no=f"PRH-{today:%y%m%d}-{seq:04d}",
-        outlet_id=outlet.id,
-        product_code=product,
-        qty_kl=qty_kl,
-        indent_date=today,
-        status=INDENT_REQUESTED,
-        is_priority=True,
-        source="prahari",
+        return existing, False
+    indent_no = f"PRH-{today:%y%m%d}-{outlet_code}-{product}"
+    inserted = session.scalar(
+        insert(Indent)
+        .values(
+            indent_no=indent_no,
+            outlet_id=outlet.id,
+            product_code=product,
+            qty_kl=qty_kl,
+            indent_date=today,
+            status=INDENT_REQUESTED,
+            is_priority=True,
+            source="prahari",
+        )
+        .on_conflict_do_nothing(index_elements=["indent_no"])
+        .returning(Indent.id)
     )
-    session.add(indent)
+    indent = session.scalars(
+        select(Indent).where(Indent.indent_no == indent_no).execution_options(populate_existing=True)
+    ).one()
+    if inserted is None:
+        return indent, False  # someone else created it a moment ago
     held = session.scalars(
-        select(Indent).where(
+        select(Indent.indent_no).where(
             Indent.outlet_id == outlet.id, Indent.product_code == product, Indent.status == INDENT_ON_HOLD
         )
     ).all()
-    session.flush()
     _audit(
         session,
         actor,
@@ -94,9 +116,9 @@ def request_priority_indent(
         product=product,
         qty_kl=qty_kl,
         note=note,
-        held_indents=[h.indent_no for h in held],
+        held_indents=list(held),
     )
-    return indent
+    return indent, True
 
 
 def hold_receipt_for_testing(session: Session, receipt_id: int, actor: str) -> Receipt:

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import timedelta
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from sqlalchemy import func, select, text
 
 from prahari import __version__
@@ -83,10 +84,19 @@ def acknowledge(alert_id: int, session: SessionDep, actor: ActorDep) -> schemas.
 
 
 @router.post(
-    "/outlets/{code}/priority-indent", response_model=schemas.IndentOut, status_code=201, tags=["actions"]
+    "/outlets/{code}/priority-indent",
+    response_model=schemas.IndentOut,
+    status_code=201,
+    tags=["actions"],
+    responses={200: {"description": "An open indent already covers this product; it is returned."}},
 )
 def priority_indent(
-    code: str, body: schemas.PriorityIndentIn, session: SessionDep, settings: SettingsDep, actor: ActorDep
+    code: str,
+    body: schemas.PriorityIndentIn,
+    response: Response,
+    session: SessionDep,
+    settings: SettingsDep,
+    actor: ActorDep,
 ) -> schemas.IndentOut:
     """Ask the supply team for a priority delivery. Creates a *Requested* indent and re-runs the rules."""
     st = _state_for(session, settings, code)
@@ -95,13 +105,22 @@ def priority_indent(
         raise HTTPException(422, "no product given and no stock data to choose one")
     today = business_date(now_utc(), settings.tz, settings.business_day_start_hour)
     try:
-        indent = actions.request_priority_indent(
-            session, code, actor, product=product, qty_kl=body.qty_kl, today=today, note=body.note
+        indent, created = actions.request_priority_indent(
+            session,
+            code,
+            actor,
+            product=product,
+            qty_kl=body.qty_kl,
+            today=today,
+            valid_for=timedelta(hours=settings.rules.requested_indent_hours),
+            note=body.note,
         )
     except actions.NotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
     except actions.ConflictError as exc:
         raise HTTPException(409, str(exc)) from exc
+    if not created:
+        response.status_code = 200
     run_rules(session, settings, wait=True)
     return schemas.IndentOut.model_validate(indent)
 

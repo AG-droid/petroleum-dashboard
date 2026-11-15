@@ -30,6 +30,9 @@ class RuleThresholds(BaseSettings):
     licence_warn_days: int = Field(30, description="Warn when a licence expires within this many days.")
     licence_urgent_days: int = Field(10, description="Escalate when a licence expires within this many days.")
     automation_stale_minutes: int = Field(120, description="An automated outlet is offline after this gap.")
+    requested_indent_hours: int = Field(
+        24, description="A priority indent raised in Prahari counts as 'fuel coming' for this long."
+    )
 
 
 class Settings(BaseSettings):

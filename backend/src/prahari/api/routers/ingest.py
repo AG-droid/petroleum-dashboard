@@ -40,7 +40,12 @@ def upload(
     actor: ActorDep,
     force: bool = Query(False, description="Re-import even if this exact file was loaded before."),
 ) -> schemas.ImportJobOut:
-    """Upload one export (.xlsx, .csv or the sales-area .json). The format is detected from its header."""
+    """Upload one export (.xlsx, .csv or the sales-area .json). The format is detected from its header.
+
+    Returns 201 with the import job whenever the file was processed, **including** when rows or the
+    whole file were rejected or it was skipped as a duplicate: check ``status`` (succeeded |
+    partial | failed | skipped) and ``errors``. Wrong type → 415, too large → 413.
+    """
     name = Path(file.filename or "upload").name  # never trust a client path
     suffix = Path(name).suffix.lower()
     if suffix not in SUPPORTED_SUFFIXES:
@@ -63,7 +68,7 @@ def upload(
 
 
 @router.post("/ingest/automation", response_model=BatchResult, tags=["ingest"])
-def ingest_automation(batch: AutomationBatch, session: SessionDep) -> BatchResult:
+def ingest_automation(batch: AutomationBatch, session: SessionDep, _actor: ActorDep) -> BatchResult:
     """Tank-gauge levels and pump totalisers from outlet automation (see ``prahari.ingest.automation``).
 
     Rules are not re-run per batch; the scheduler picks the new readings up within a minute.
