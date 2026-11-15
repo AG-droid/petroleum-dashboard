@@ -21,7 +21,10 @@ const out = resolve(process.argv[2] || `${root}/backend/src/prahari/samples/worl
 // data.js is a browser script that assigns window.DB; give it a minimal window.
 const sandbox = { window: {}, Math, Date, console };
 vm.createContext(sandbox);
-vm.runInContext(readFileSync(`${root}/poc/js/data.js`, 'utf8'), sandbox, { filename: 'data.js' });
+// The road network goes first: data.js snaps outlets and depots onto real roads with it.
+for (const f of ['roadnet.js', 'roads.js', 'data.js']) {
+  vm.runInContext(readFileSync(`${root}/poc/js/${f}`, 'utf8'), sandbox, { filename: f });
+}
 const DB = sandbox.window.DB;
 
 const DAY = 86400000;

@@ -7,6 +7,8 @@
   const TZ = DB.util.TZ; // the sales area is in India: show every time in IST
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+  // Escape text from outside sources (OpenStreetMap road names, the API) before it goes into HTML.
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
   const ST_TXT = { ok: 'Running normally', warn: 'Needs attention', crit: 'Urgent', off: 'Offline' };
   const ST_HEX = { ok: '#57b583', warn: '#e0a645', crit: '#e5604f', off: '#7c8188' };
@@ -603,10 +605,10 @@
       const o = DB.byId(t.outletId), eta = Sim.etaMin(t), halted = t.status === 'Halted';
       rp.innerHTML = `<div class="od-head"><button class="icon-btn od-close" id="tkClose">${I.x}</button>
         <div class="od-name">${t.plate}</div><div class="od-meta">Tank truck · ${t.cap} kL · ${t.transporter}</div>
-        <div class="od-summary"><span class="dot ${halted ? 'crit' : 'ok'}"></span><span>${halted ? `Stopped for ${Math.round(t.haltSec / 60)} min, about 1 km off its planned route. Seals not yet verified.` : `${t.status}${eta ? `, arriving at ${o.name} in about ${eta} min` : ''}.`}</span></div>
+        <div class="od-summary"><span class="dot ${halted ? 'crit' : 'ok'}"></span><span>${halted ? `Stopped for ${Math.round(t.haltSec / 60)} min, ${Sim.offRouteKm(t).toFixed(1)} km off its planned route. Seals not yet verified.` : `${t.status}${eta ? `, arriving at ${o.name} in about ${eta} min` : ''}.`}</span></div>
         <div class="od-actions">${halted ? `<button class="btn primary" id="tkCall">${I.phone}Contact driver</button>` : `<button class="btn primary" id="tkCall">${I.phone}Call driver</button>`}<button class="btn" data-outlet="${o.id}" data-tab="supply">Destination outlet</button></div></div>
         <div class="p-body" style="border-top:1px solid var(--border);padding-top:16px">
-          <div class="kv"><span>Route</span><div>${DB.depotById(t.depotId).name} → ${o.name}</div><span>Distance</span><div>${fmt.kl(t.route.km)} km</div><span>Progress</span><div>${Math.round(t.progress * 100)}%</div><span>Carrying</span><div>${t.comps.map((c) => `${c.kl} kL ${pname(c.product).toLowerCase()}`).join(', ')}</div><span>Driver</span><div>${t.driver}</div><span>Invoice</span><div class="mono">${t.invoice}</div><span>Seals</span><div class="mono">${t.seals.join(', ')}</div><span>Left depot</span><div>${fmt.hm(t.dispatchedAt)}</div></div>
+          <div class="kv"><span>Route</span><div>${DB.depotById(t.depotId).name} → ${o.name}</div><span>Distance</span><div>${fmt.kl(t.route.km)} km${t.route.min ? ` · about ${Math.round(t.route.min)} min driving` : ''}</div>${t.route.via && t.route.via.length ? `<span>Via</span><div>${esc(t.route.via.slice(0, 2).join(', '))}</div>` : ''}<span>Progress</span><div>${Math.round(t.progress * 100)}%</div><span>Carrying</span><div>${t.comps.map((c) => `${c.kl} kL ${pname(c.product).toLowerCase()}`).join(', ')}</div><span>Driver</span><div>${t.driver}</div><span>Invoice</span><div class="mono">${t.invoice}</div><span>Seals</span><div class="mono">${t.seals.join(', ')}</div><span>Left depot</span><div>${fmt.hm(t.dispatchedAt)}</div></div>
           <div class="progress" style="margin-top:16px"><i style="width:${t.progress * 100}%;${halted ? 'background:var(--crit)' : ''}"></i></div>
           <div class="section"><div class="sh"><h4>Trip log</h4></div>
             <div class="note"><small>${fmt.hm(t.dispatchedAt)}</small>Left ${DB.depotById(t.depotId).name}; seals checked at the gantry</div>
