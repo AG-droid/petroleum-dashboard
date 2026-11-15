@@ -4,6 +4,8 @@
 
 > **Status:** proof of concept, running on **synthetic data** for the Gurugram Sales Area (Haryana).
 > No real oil company data, branding or systems are used.
+>
+> **New: Prahari for dealers** ([`poc/dealer/`](poc/dealer/README.md)), the dealer's side. It shows a ranked list of recommended actions built from the outlet's data, then lets the dealer order fuel, pay by RTGS/NEFT (UTR recorded; no money moved), track the truck and check the receipt.
 
 ![PRAHARI operations map: the Gurugram Sales Area with live outlets, tank trucks and supply points](docs/screenshots/01-ops-map.png)
 
@@ -265,6 +267,7 @@ petroleum-dashboard/
 │   ├── README.md                 ← POC-specific notes
 │   ├── css/styles.css
 │   ├── js/                       ← data, sim, map, ui, tour, cctv, charts, api, main
+│   ├── dealer/                   ← the dealer app: outlets, recommended actions, orders, payment (see its README)
 │   └── vendor/                   ← bundled MapLibre GL JS (works offline)
 ├── backend/                      ← Python/FastAPI backend: importers, rules, API (see its README)
 │   ├── src/prahari/

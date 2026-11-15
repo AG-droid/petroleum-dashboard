@@ -2,6 +2,8 @@
 
 A clickable, live-simulated command dashboard for an oil company **Sales Officer**, set in the **Gurugram Sales Area**. Every outlet, dealer, tanker, number and camera feed is **synthetic**: generated from a fixed seed, so it looks the same on every load.
 
+> **Also here:** [`dealer/`](dealer/README.md), the dealer's side of Prahari (outlets, recommended actions, ordering and payment). Open `http://localhost:8080/dealer/`.
+
 ## How to run
 
 **Easiest:** double-click `start.command` (macOS). It starts a local server and opens the browser.
