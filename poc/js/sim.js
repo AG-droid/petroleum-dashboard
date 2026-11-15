@@ -38,7 +38,7 @@
     const frac = util.dayFractionElapsed();
     const todayL = Object.values(o.today).reduce((a, b) => a + b, 0);
     const targetDailyL = o.targetMonth / 30 * 1000;
-    const dom = new Date().getDate();
+    const dom = util.istNow().getDate();
     const prior = o.hist.slice(-dom, -1).reduce((a, h) => a + h.total, 0);
     const mtdKL = prior + todayL / 1000;
     const mtdTarget = o.targetMonth / 30 * (dom - 1 + frac);
@@ -116,7 +116,7 @@
       rule(!o.raOnline, 'ra:' + o.id, {
         sev: 'high', cat: 'Equipment', outletId: o.id,
         title: `Automation offline at ${o.name}`,
-        detail: `No data from forecourt controller since ${new Date(Sim.raLastSync).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}. Tank and sales figures are stale.`,
+        detail: `No data from forecourt controller since ${new Date(Sim.raLastSync).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: util.TZ })}. Tank and sales figures are stale.`,
       });
       rule(m.camsOff > 0, 'cam:' + o.id, {
         sev: 'medium', cat: 'Security', outletId: o.id,
@@ -131,7 +131,7 @@
       m.lic.forEach((l) => rule(l.days <= 30, 'lic:' + l.k + ':' + o.id, {
         sev: l.days <= 10 ? 'high' : 'medium', cat: 'Compliance', outletId: o.id,
         title: `${l.label} due in ${l.days} days at ${o.name}`,
-        detail: `Due ${new Date(l.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. Dealer to submit renewal documents.`,
+        detail: `Due ${new Date(l.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: util.TZ })}. Dealer to submit renewal documents.`,
       }));
       o.compliance.irregularities.forEach((ir, i) => rule(ir.status === 'Open', 'irr:' + i + ':' + o.id, {
         sev: 'medium', cat: 'Compliance', outletId: o.id,
@@ -301,7 +301,7 @@
   // ---------- Main tick ----------
   function step() {
     Sim.t++;
-    const h = new Date().getHours();
+    const h = util.istNow().getHours();
     const perSec = HOURLY[h] / 3600;
     outlets.forEach((o) => {
       if (!o.raOnline) return;

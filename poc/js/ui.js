@@ -4,6 +4,7 @@
 (function () {
   'use strict';
   const { outlets, tankers, depots, competitors, PRODUCTS, HOURLY } = DB;
+  const TZ = DB.util.TZ; // the sales area is in India: show every time in IST
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -32,9 +33,9 @@
     inr: (v) => '₹' + Math.round(v).toLocaleString('en-IN'),
     lakh: (v) => '₹' + (v / 100000).toFixed(1) + ' lakh',
     pct: (v) => Math.round(v * 100) + '%',
-    time: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    hm: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-    date: (ts) => new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    time: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ }),
+    hm: (ts) => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ }),
+    date: (ts) => new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ }),
     ago(ts) {
       const s = (Date.now() - ts) / 1000;
       if (s < 45) return 'just now';
@@ -109,7 +110,7 @@
 
   function clock() {
     const d = new Date();
-    $('#clock').innerHTML = `<span class="live-dot"></span>${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+    $('#clock').innerHTML = `<span class="live-dot"></span>${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ })}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ })} IST`;
   }
   function onKey(e) {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
@@ -475,7 +476,7 @@
       const labels = o.hist.map((h) => +h.date.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+h.date.slice(5, 7) - 1]);
       Charts.line($('#chSales'), { labels, series: [{ data: o.hist.map((h) => h.total), color: '#7aa7ff', label: 'Sold', fill: true }, { data: o.hist.map(() => o.targetMonth / 30), color: '#6e737a', label: 'Target', dash: [3, 4], width: 1.2 }], yFmt: (v) => v.toFixed(0) });
       Charts.bars($('#chMix'), { horizontal: true, labelWidth: 110, items: Object.keys(o.prod).map((p) => ({ label: pname(p), value: o.hist.reduce((a, h) => a + h[p], 0), color: PRODUCTS[p].color })), fmt: (v) => v.toFixed(0) + ' kL' });
-      const hr = new Date().getHours();
+      const hr = DB.util.istNow().getHours();
       Charts.bars($('#chHour'), { items: hourly(o).map((v, i) => ({ label: String(i), value: i <= hr ? v : 0, color: i === hr ? '#ecedee' : '#4a4f57' })), yFmt: (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v) });
     });
   }
@@ -826,7 +827,7 @@
       <div class="cp-sugg" id="cpSugg">${['Summarise my area', 'Which outlets may run dry?', 'Who is behind target?', 'Where are my trucks?', 'What renewals are due?', 'Any security issues?'].map((s) => `<button class="chip">${s}</button>`).join('')}</div>
       <div class="cp-input"><input class="input" id="cpIn" placeholder="Ask a question, e.g. how is ${outlets[5].name} doing?"><button class="btn primary" id="cpGo">${I.send}</button></div>`;
     bindClose(ov);
-    if (!UI.state.cpMsgs.length) UI.state.cpMsgs.push({ who: 'bot', html: 'Good ' + (new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening') + '. ' + answer('summary') });
+    if (!UI.state.cpMsgs.length) UI.state.cpMsgs.push({ who: 'bot', html: 'Good ' + (DB.util.istNow().getHours() < 12 ? 'morning' : DB.util.istNow().getHours() < 17 ? 'afternoon' : 'evening') + '. ' + answer('summary') });
     drawMsgs();
     const ask = (q) => {
       if (!q.trim()) return;

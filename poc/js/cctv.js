@@ -44,7 +44,7 @@
       this.c.width = Math.round(w * dpr); this.c.height = Math.round(h * dpr);
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    night() { const hr = new Date().getHours(); return hr < 6 || hr >= 19; }
+    night() { const hr = DB.util.istNow().getHours(); return hr < 6 || hr >= 19; }
 
     // ---------- simulation ----------
     update(dt) {
@@ -308,7 +308,7 @@
       ctx.fillStyle = '#ffffff'; ctx.fillText(this.o.label.toUpperCase(), 12, small ? 16 : 18);
       if (!small) { ctx.font = '9.5px JetBrains Mono, monospace'; ctx.fillStyle = '#b7c4cf'; ctx.fillText(this.o.sub || '', 12, 31); }
       const d = new Date();
-      const ts = (w < 340 ? '' : d.toLocaleDateString('en-GB') + ' ') + d.toLocaleTimeString('en-GB');
+      const ts = (w < 340 ? '' : d.toLocaleDateString('en-GB', { timeZone: DB.util.TZ }) + ' ') + d.toLocaleTimeString('en-GB', { timeZone: DB.util.TZ });
       ctx.font = `${small ? 9 : 10.5}px JetBrains Mono, monospace`; ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff';
       ctx.fillText(ts, w - 10, small ? 16 : 18);
       ctx.textAlign = 'left';
