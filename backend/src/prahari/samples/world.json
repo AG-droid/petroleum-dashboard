@@ -1,13 +1,13 @@
 {
  "schema": 1,
  "note": "Synthetic data. Every outlet, dealer, number and plate is fictional.",
- "exported_at": "2026-11-15T10:20:03.840Z",
+ "exported_at": "2026-11-15T12:45:05.793Z",
  "meta": {
   "salesArea": "Gurugram Sales Area",
   "division": "Gurugram Division",
   "state": "Haryana State Office",
   "officer": "Sales Officer, Gurugram SA",
-  "generatedAt": 1794738003840
+  "generatedAt": 1794746705793
  },
  "products": [
   {
@@ -42,54 +42,50 @@
   {
    "id": "DEP-BJW",
    "name": "Bijwasan Terminal",
-   "lng": 77.052,
-   "lat": 28.548,
+   "lng": 77.05419451056058,
+   "lat": 28.549262815384672,
    "capacity_kl": 98000
   },
   {
    "id": "DEP-RWR",
    "name": "Rewari Depot",
-   "lng": 76.628,
-   "lat": 28.178,
+   "lng": 76.62713659163354,
+   "lat": 28.17964067107283,
    "capacity_kl": 42000
   }
  ],
  "area": [
   [
-   76.58038204345394,
-   28.06369423735313
+   76.56991722439781,
+   28.074373490746524
   ],
   [
-   77.09505880439357,
-   28.24172096676298
+   77.09491371908832,
+   28.24140235585851
   ],
   [
-   77.28693233238262,
-   28.43166694609729
+   77.27620482395936,
+   28.430616894993605
   ],
   [
-   77.07898827592703,
-   28.582389956363038
+   77.08022384528067,
+   28.583676249977085
   ],
   [
-   77.05792340434317,
-   28.579379609614794
+   77.0630363988365,
+   28.5746020250459
   ],
   [
-   76.8281468068047,
-   28.39099386668345
+   76.78810206094062,
+   28.376352224832516
   ],
   [
-   76.77190832829973,
-   28.320167369893024
+   76.58191897608238,
+   28.149699448347818
   ],
   [
-   76.58410827592702,
-   28.147989956363038
-  ],
-  [
-   76.58038204345394,
-   28.06369423735313
+   76.56991722439781,
+   28.074373490746524
   ]
  ],
  "stories": {
@@ -112,8 +108,8 @@
    "locality": "Sirhaul",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Sirhaul, NH-48 (Delhi–Jaipur)",
-   "lng": 77.08732757080043,
-   "lat": 28.493750613061152,
+   "lng": 77.08279969250746,
+   "lat": 28.491816652674608,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -515,8 +511,8 @@
    "locality": "IFFCO Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "IFFCO Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 77.03646663376168,
-   "lat": 28.44421955936641,
+   "lng": 77.0287530715002,
+   "lat": 28.446700992312998,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -893,8 +889,8 @@
    "locality": "Rajiv Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Rajiv Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.98691665502501,
-   "lat": 28.40541964898754,
+   "lng": 76.98911905245832,
+   "lat": 28.403608240279738,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -1285,8 +1281,8 @@
    "locality": "Rajiv Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Rajiv Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.96616451119573,
-   "lat": 28.38691636256907,
+   "lng": 76.96870477194092,
+   "lat": 28.3826971235868,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -1653,8 +1649,8 @@
    "locality": "Hero Honda Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Hero Honda Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.91215676051107,
-   "lat": 28.337796585767176,
+   "lng": 76.92518502036778,
+   "lat": 28.337179594044116,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -2084,8 +2080,8 @@
    "locality": "Kherki Daula",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Kherki Daula, NH-48 (Delhi–Jaipur)",
-   "lng": 76.87758169055544,
-   "lat": 28.31808926208808,
+   "lng": 76.89044701283055,
+   "lat": 28.315420066902306,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -2490,8 +2486,8 @@
    "locality": "Manesar",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Manesar, NH-48 (Delhi–Jaipur)",
-   "lng": 76.8458562673742,
-   "lat": 28.277028194418733,
+   "lng": 76.85031582016451,
+   "lat": 28.27939049962061,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -2840,8 +2836,8 @@
    "locality": "Bilaspur Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Bilaspur Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.79402264866484,
-   "lat": 28.210550082230412,
+   "lng": 76.793996748565,
+   "lat": 28.212098047006766,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -3243,8 +3239,8 @@
    "locality": "Bilaspur Chowk",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Bilaspur Chowk, NH-48 (Delhi–Jaipur)",
-   "lng": 76.7715073626641,
-   "lat": 28.191559460153243,
+   "lng": 76.76662153648691,
+   "lat": 28.204688119932374,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -3688,8 +3684,8 @@
    "locality": "Dharuhera",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Dharuhera, NH-48 (Delhi–Jaipur)",
-   "lng": 76.71791118346641,
-   "lat": 28.1507313801109,
+   "lng": 76.70519867992745,
+   "lat": 28.174162488422198,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -4091,8 +4087,8 @@
    "locality": "Kapriwas",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Kapriwas, NH-48 (Delhi–Jaipur)",
-   "lng": 76.68456434846394,
-   "lat": 28.13220100410268,
+   "lng": 76.67460208811995,
+   "lat": 28.152541644813336,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -4469,8 +4465,8 @@
    "locality": "Bawal",
    "road": "NH-48 (Delhi–Jaipur)",
    "address": "Bawal, NH-48 (Delhi–Jaipur)",
-   "lng": 76.62467300672046,
-   "lat": 28.102735965169725,
+   "lng": 76.61642074191518,
+   "lat": 28.11238535178596,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -4900,8 +4896,8 @@
    "locality": "Subhash Chowk",
    "road": "Sohna Road (NH-248A)",
    "address": "Subhash Chowk, Sohna Road (NH-248A)",
-   "lng": 77.04136404107558,
-   "lat": 28.436404282062544,
+   "lng": 77.035960520702,
+   "lat": 28.433211192366635,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -5267,8 +5263,8 @@
    "locality": "Badshahpur",
    "road": "Sohna Road (NH-248A)",
    "address": "Badshahpur, Sohna Road (NH-248A)",
-   "lng": 77.04388373270625,
-   "lat": 28.401430390531015,
+   "lng": 77.04527101425685,
+   "lat": 28.399980798041263,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -5648,8 +5644,8 @@
    "locality": "Vatika Chowk",
    "road": "Sohna Road (NH-248A)",
    "address": "Vatika Chowk, Sohna Road (NH-248A)",
-   "lng": 77.04882233028245,
-   "lat": 28.369603332653686,
+   "lng": 77.05873553410586,
+   "lat": 28.367547470476055,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -5976,8 +5972,8 @@
    "locality": "Bhondsi",
    "road": "Sohna Road (NH-248A)",
    "address": "Bhondsi, Sohna Road (NH-248A)",
-   "lng": 77.0490676661487,
-   "lat": 28.34090334298053,
+   "lng": 77.06789874711934,
+   "lat": 28.340513652195106,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -6357,8 +6353,8 @@
    "locality": "Raisina",
    "road": "Sohna Road (NH-248A)",
    "address": "Raisina, Sohna Road (NH-248A)",
-   "lng": 77.05962248301189,
-   "lat": 28.30455675983014,
+   "lng": 77.06681764060946,
+   "lat": 28.307229780721496,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -6738,8 +6734,8 @@
    "locality": "Sohna",
    "road": "Sohna Road (NH-248A)",
    "address": "Sohna, Sohna Road (NH-248A)",
-   "lng": 77.06634868613084,
-   "lat": 28.261688402142806,
+   "lng": 77.06731046931742,
+   "lat": 28.26151826706452,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -7119,8 +7115,8 @@
    "locality": "Sikanderpur",
    "road": "Gurugram–Faridabad Road",
    "address": "Sikanderpur, Gurugram–Faridabad Road",
-   "lng": 77.09171928055758,
-   "lat": 28.458355688310238,
+   "lng": 77.10317353884687,
+   "lat": 28.472121666120866,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -7514,8 +7510,8 @@
    "locality": "Gwal Pahari",
    "road": "Gurugram–Faridabad Road",
    "address": "Gwal Pahari, Gurugram–Faridabad Road",
-   "lng": 77.13225844187868,
-   "lat": 28.434747415759198,
+   "lng": 77.12654669624489,
+   "lat": 28.439423767130293,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -7895,8 +7891,8 @@
    "locality": "Bandhwari",
    "road": "Gurugram–Faridabad Road",
    "address": "Bandhwari, Gurugram–Faridabad Road",
-   "lng": 77.18810263470813,
-   "lat": 28.420915798485847,
+   "lng": 77.1757472518714,
+   "lat": 28.4046822183635,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -8223,8 +8219,8 @@
    "locality": "Mangar",
    "road": "Gurugram–Faridabad Road",
    "address": "Mangar, Gurugram–Faridabad Road",
-   "lng": 77.23766433612106,
-   "lat": 28.413425883691296,
+   "lng": 77.22917752723798,
+   "lat": 28.412602677006564,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -8565,8 +8561,8 @@
    "locality": "Basai",
    "road": "Pataudi Road",
    "address": "Basai, Pataudi Road",
-   "lng": 76.96723883752341,
-   "lat": 28.4496016254227,
+   "lng": 76.96584438818641,
+   "lat": 28.433142547517164,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -8893,8 +8889,8 @@
    "locality": "Garhi Harsaru",
    "road": "Pataudi Road",
    "address": "Garhi Harsaru, Pataudi Road",
-   "lng": 76.92519487388326,
-   "lat": 28.43136032187309,
+   "lng": 76.91298211281165,
+   "lat": 28.420046116077955,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -9221,8 +9217,8 @@
    "locality": "Sultanpur",
    "road": "Pataudi Road",
    "address": "Sultanpur, Pataudi Road",
-   "lng": 76.87602069474495,
-   "lat": 28.400849534171282,
+   "lng": 76.85214018345596,
+   "lat": 28.387768087010542,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -9549,8 +9545,8 @@
    "locality": "Jamalpur",
    "road": "Pataudi Road",
    "address": "Jamalpur, Pataudi Road",
-   "lng": 76.8458915454265,
-   "lat": 28.37711063421465,
+   "lng": 76.81122863168554,
+   "lat": 28.36415207864845,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -9863,8 +9859,8 @@
    "locality": "Pataudi",
    "road": "Pataudi Road",
    "address": "Pataudi, Pataudi Road",
-   "lng": 76.79567861818992,
-   "lat": 28.331729833508916,
+   "lng": 76.76932935654608,
+   "lat": 28.312586495019463,
    "automated": true,
    "automation_online": false,
    "dealer": {
@@ -10177,8 +10173,8 @@
    "locality": "Sector 37D",
    "road": "Dwarka Expressway",
    "address": "Sector 37D, Dwarka Expressway",
-   "lng": 77.01382872569303,
-   "lat": 28.48201663905749,
+   "lng": 76.9989878844762,
+   "lat": 28.492835371463155,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -10572,8 +10568,8 @@
    "locality": "Sector 99",
    "road": "Dwarka Expressway",
    "address": "Sector 99, Dwarka Expressway",
-   "lng": 77.01819948210645,
-   "lat": 28.502107901246763,
+   "lng": 77.01360284079058,
+   "lat": 28.507749770185924,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -10967,8 +10963,8 @@
    "locality": "Sector 106",
    "road": "Dwarka Expressway",
    "address": "Sector 106, Dwarka Expressway",
-   "lng": 77.02590932827063,
-   "lat": 28.52404082616674,
+   "lng": 77.02993470102118,
+   "lat": 28.5258953862555,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -11362,8 +11358,8 @@
    "locality": "Bajghera",
    "road": "Dwarka Expressway",
    "address": "Bajghera, Dwarka Expressway",
-   "lng": 77.03319207894299,
-   "lat": 28.54531219040335,
+   "lng": 77.03884857623542,
+   "lat": 28.54116082883897,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -11690,8 +11686,8 @@
    "locality": "DLF Phase 2",
    "road": "City",
    "address": "DLF Phase 2, Gurugram",
-   "lng": 77.04758014497145,
-   "lat": 28.44749898439987,
+   "lng": 77.04693860961534,
+   "lat": 28.446972656324007,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -12071,8 +12067,8 @@
    "locality": "Sector 14",
    "road": "City",
    "address": "Sector 14, Gurugram",
-   "lng": 77.01985170961943,
-   "lat": 28.46762012872211,
+   "lng": 77.02043743195276,
+   "lat": 28.467827553153946,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -12438,8 +12434,8 @@
    "locality": "Sector 29",
    "road": "City",
    "address": "Sector 29, Gurugram",
-   "lng": 77.01745511751263,
-   "lat": 28.47771822403504,
+   "lng": 77.0171595307553,
+   "lat": 28.477605496132114,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -12833,8 +12829,8 @@
    "locality": "Udyog Vihar",
    "road": "City",
    "address": "Udyog Vihar, Gurugram",
-   "lng": 77.06755454375748,
-   "lat": 28.44717553835608,
+   "lng": 77.06975,
+   "lat": 28.44997,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -13242,8 +13238,8 @@
    "locality": "Palam Vihar",
    "road": "City",
    "address": "Palam Vihar, Gurugram",
-   "lng": 77.02056067004499,
-   "lat": 28.464983035104417,
+   "lng": 77.01986409317178,
+   "lat": 28.465284689352725,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -13584,8 +13580,8 @@
    "locality": "South City",
    "road": "City",
    "address": "South City, Gurugram",
-   "lng": 77.00374133617649,
-   "lat": 28.45486479040269,
+   "lng": 77.0042195270737,
+   "lat": 28.455123532751863,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -13965,8 +13961,8 @@
    "locality": "Sector 56",
    "road": "City",
    "address": "Sector 56, Gurugram",
-   "lng": 77.0590455360883,
-   "lat": 28.46496750616305,
+   "lng": 77.06044568171161,
+   "lat": 28.46640436315545,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -14307,8 +14303,8 @@
    "locality": "Sushant Lok",
    "road": "City",
    "address": "Sushant Lok, Gurugram",
-   "lng": 77.01533591446446,
-   "lat": 28.45894756518376,
+   "lng": 77.01669816573471,
+   "lat": 28.458257726647723,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -14677,8 +14673,8 @@
    "locality": "Sector 45",
    "road": "City",
    "address": "Sector 45, Gurugram",
-   "lng": 77.03340002136422,
-   "lat": 28.46028594918649,
+   "lng": 77.03333378966154,
+   "lat": 28.46023811042587,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -15013,8 +15009,8 @@
    "locality": "New Railway Road",
    "road": "City",
    "address": "New Railway Road, Gurugram",
-   "lng": 77.03186928203336,
-   "lat": 28.478103695135292,
+   "lng": 77.0321795342949,
+   "lat": 28.47883615241258,
    "automated": false,
    "automation_online": true,
    "dealer": {
@@ -15394,8 +15390,8 @@
    "locality": "Sector 10A",
    "road": "City",
    "address": "Sector 10A, Gurugram",
-   "lng": 77.02128008659678,
-   "lat": 28.476709906709292,
+   "lng": 77.02060786817015,
+   "lat": 28.477062979622204,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -15775,8 +15771,8 @@
    "locality": "Sector 31",
    "road": "City",
    "address": "Sector 31, Gurugram",
-   "lng": 77.07605979423407,
-   "lat": 28.46297945129822,
+   "lng": 77.07384656658601,
+   "lat": 28.4627845821894,
    "automated": true,
    "automation_online": true,
    "dealer": {
@@ -16117,8 +16113,8 @@
    "locality": "MG Road",
    "road": "City",
    "address": "MG Road, Gurugram",
-   "lng": 77.03800014717648,
-   "lat": 28.43932845275842,
+   "lng": 77.0400705605314,
+   "lat": 28.44145595892097,
    "automated": true,
    "automation_online": true,
    "dealer": {
