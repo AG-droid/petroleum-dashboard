@@ -28,7 +28,7 @@ ps: ## Show service status
 db: ## Start only the database (for tests and local development)
 	$(COMPOSE) up -d --wait db
 
-demo-data: ## Regenerate today's sample data and import it (run each morning for a fresh day)
+demo-data: ## Generate and import today's sample data (a new day first clears the previous day's records)
 	$(COMPOSE) run --rm migrate
 
 reset: ## Delete all data and start again from scratch

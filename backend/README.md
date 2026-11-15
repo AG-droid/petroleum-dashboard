@@ -31,7 +31,7 @@ files for today, imports them, and starts a feed that posts live tank-gauge and 
 | --- | --- |
 | `make up` / `make down` | Start / stop the stack (data is kept) |
 | `make logs` | Follow the logs |
-| `make demo-data` | Generate and import a fresh day of sample data (do this each morning; the demo day starts at 06:00 IST) |
+| `make demo-data` | Generate and import a fresh day of sample data (do this each morning; the demo day starts at 06:00 IST). On a new day it **clears** the previous day's sales, dips, deliveries and indents, including anything you uploaded or requested, so the new month is consistent. Re-running on the same day keeps everything. `make up` does the same. |
 | `make reset` | Delete everything and start again |
 | `make check` | Lint, strict type checks, tests and migration check |
 
