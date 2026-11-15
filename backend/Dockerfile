@@ -14,7 +14,8 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-editable
 
 FROM python:3.12-slim-bookworm
-RUN useradd --system --uid 10001 --home-dir /app prahari && mkdir -p /data && chown prahari /data
+# /data/samples must exist (owned by the app user) so a new named volume inherits that ownership.
+RUN useradd --system --uid 10001 --home-dir /app prahari && mkdir -p /data/samples && chown -R prahari /data
 WORKDIR /app
 COPY --from=build --chown=prahari /app/.venv /app/.venv
 ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1 PRAHARI_LOG_JSON=true
@@ -22,4 +23,5 @@ USER prahari
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=4).status == 200 else 1)"
-CMD ["uvicorn", "prahari.api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--log-config", "/dev/null"]
+# `prahari serve` runs uvicorn with our logging setup (JSON lines in containers).
+CMD ["prahari", "serve", "--host", "0.0.0.0", "--port", "8000"]
