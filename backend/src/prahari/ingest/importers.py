@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -121,6 +121,7 @@ def _run(
     build: Callable[[dict[str, Any]], dict[str, Any]],
     write: Callable[[list[dict[str, Any]]], None],
     key: list[str],
+    *also_unique: list[str],
 ) -> ImportResult:
     """Validate every row with ``build``; pass the accepted records to ``write`` in one batch.
 
@@ -130,7 +131,7 @@ def _run(
     """
     result = ImportResult(total=len(table.rows))
     records: list[dict[str, Any]] = []
-    first_row: dict[tuple[Any, ...], int] = {}
+    first_row: dict[tuple[Any, ...], int] = {}  # (key-set index, values) → first row number
     for row_no, values in table.rows:
         try:
             record = build(values)
@@ -140,11 +141,13 @@ def _run(
         except ValueError as exc:
             result.errors.append(RowError(row_no, None, str(exc)))
             continue
-        k = tuple(record[f] for f in key)
-        if k in first_row:
-            result.errors.append(RowError(row_no, None, f"duplicate of row {first_row[k]}"))
+        ks = [(n, *(record[f] for f in fields)) for n, fields in enumerate((key, *also_unique))]
+        clash = next((first_row[k] for k in ks if k in first_row), None)
+        if clash is not None:
+            result.errors.append(RowError(row_no, None, f"duplicate of row {clash}"))
             continue
-        first_row[k] = row_no
+        for k in ks:
+            first_row[k] = row_no
         records.append(record)
     if records:
         write(records)
@@ -170,6 +173,8 @@ def _upsert(session: Session, model: Any, records: list[dict[str, Any]], keys: l
 # Sales area (JSON): area, depots and products
 # --------------------------------------------------------------------------------------------
 class _ProductIn(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     code: str = Field(min_length=1, max_length=8)
     name: str = Field(min_length=1, max_length=60)
     price_per_l: float = Field(gt=0, lt=1000)
@@ -178,6 +183,8 @@ class _ProductIn(BaseModel):
 
 
 class _DepotIn(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     code: str = Field(min_length=1, max_length=16)
     name: str = Field(min_length=1, max_length=120)
     lat: float = Field(ge=6, le=37)
@@ -186,6 +193,8 @@ class _DepotIn(BaseModel):
 
 
 class _SalesAreaIn(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     code: str = Field(min_length=1, max_length=16)
     name: str = Field(min_length=1, max_length=120)
     division: str | None = Field(None, max_length=120)
@@ -193,6 +202,15 @@ class _SalesAreaIn(BaseModel):
     boundary: list[list[float]] | None = None
     products: list[_ProductIn] = Field(default_factory=list)
     depots: list[_DepotIn] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _unique_codes(self) -> _SalesAreaIn:
+        for name, items in (("products", self.products), ("depots", self.depots)):
+            codes = [i.code for i in items]
+            dupes = sorted({c for c in codes if codes.count(c) > 1})
+            if dupes:
+                raise ValueError(f"{name}: duplicate code(s) {', '.join(dupes)}")
+        return self
 
 
 def import_sales_area(session: Session, path: Path) -> ImportResult:
@@ -278,7 +296,7 @@ def import_ro_master(session: Session, table: Table) -> ImportResult:
                     setattr(outlet.dealer, k, val)
         session.flush()
 
-    return _run(table, build, write, ["sap_code"])
+    return _run(table, build, write, ["sap_code"], ["code"])  # both are unique columns
 
 
 def import_tank_master(session: Session, table: Table) -> ImportResult:

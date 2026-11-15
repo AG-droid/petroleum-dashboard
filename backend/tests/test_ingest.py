@@ -183,3 +183,45 @@ def test_new_demo_day_clears_generated_history(session: Session, settings: Setti
     for model in (NozzleDailySales, Receipt, Indent):
         assert session.scalar(select(func.count()).select_from(model)) == 0
     assert session.scalar(select(func.count(Outlet.id))) == 44  # masters stay
+
+
+def test_duplicate_codes_are_row_errors_not_internal_errors(
+    session: Session, settings: Settings, tmp_path: Path
+) -> None:
+    p = tmp_path / "SALES_AREA.json"
+    p.write_text(
+        '{"kind": "sales_area", "code": "X", "name": "Test", "products": ['
+        '{"code": "MS", "name": "Petrol", "price_per_l": 100, "density_min": 720, "density_max": 775},'
+        '{"code": "MS", "name": "Petrol", "price_per_l": 100, "density_min": 720, "density_max": 775}]}'
+    )
+    job = import_file(session, p, settings)
+    assert job.status == "failed" and "duplicate code" in (job.errors or [{}])[0]["message"]
+
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    assert ws is not None
+    ws.append(list(FORMATS[FileKind.RO_MASTER].columns))
+    base = [
+        "Gurugram",
+        "Urban",
+        "DODO",
+        "N",
+        "Sector 1",
+        "",
+        "",
+        28.45,
+        77.03,
+        "Y",
+        300,
+        "Test Dealer",
+        "",
+        2001,
+    ]
+    ws.append(["99000001", "NEW-1", "One", *base])
+    ws.append(["99000002", "NEW-1", "Two", *base])  # same RO_REF, different SAP code
+    wb.save(tmp_path / "ro.xlsx")
+    job = import_file(session, tmp_path / "ro.xlsx", settings)
+    assert (job.rows_accepted, job.rows_rejected) == (1, 1)
+    assert (job.errors or [{}])[0]["message"] == "duplicate of row 2"

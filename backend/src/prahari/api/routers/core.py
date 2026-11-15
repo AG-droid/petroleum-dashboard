@@ -37,6 +37,16 @@ def _state_for(session: SessionDep, settings: SettingsDep, code: str) -> OutletS
     return compute_states(session, settings, codes=[code])[0]
 
 
+def _neediest_product(st: OutletState) -> str | None:
+    """The least-covered product with no delivery already coming (else the least covered)."""
+    rated = sorted(
+        (p for p in st.products.values() if p.days_cover is not None), key=lambda p: p.days_cover or 0.0
+    )
+    uncovered = [p for p in rated if st.covering_indent(p.product) is None]
+    pick = (uncovered or rated)[:1]
+    return pick[0].product if pick else None
+
+
 @router.get("/health", response_model=schemas.Health, tags=["system"])
 def health(request: Request, session: SessionDep) -> schemas.Health:
     session.execute(text("SELECT 1"))
@@ -100,7 +110,7 @@ def priority_indent(
 ) -> schemas.IndentOut:
     """Ask the supply team for a priority delivery. Creates a *Requested* indent and re-runs the rules."""
     st = _state_for(session, settings, code)
-    product = body.product or (st.min_cover.product if st.min_cover else None)
+    product = body.product or _neediest_product(st)
     if product is None:
         raise HTTPException(422, "no product given and no stock data to choose one")
     today = business_date(now_utc(), settings.tz, settings.business_day_start_hour)

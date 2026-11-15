@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -71,6 +72,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(core.router, prefix="/api/v1")
     app.include_router(ingest.router, prefix="/api/v1")
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
+        # Same shape as FastAPI's default 422, minus the echoed input: it can hold values JSON
+        # can't represent (Infinity) and there's no need to reflect payloads back.
+        errors = [{k: v for k, v in e.items() if k in {"type", "loc", "msg"}} for e in exc.errors()]
+        return JSONResponse(status_code=422, content={"detail": errors})
 
     @app.exception_handler(Exception)
     async def unhandled(request: Request, exc: Exception) -> JSONResponse:

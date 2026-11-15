@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from prahari.db.base import Base, TimestampMixin
@@ -22,6 +22,17 @@ INDENT_COVERING = frozenset({INDENT_PENDING, INDENT_REQUESTED, INDENT_DISPATCHED
 
 class Indent(Base, TimestampMixin):
     __tablename__ = "indent"
+    # At most one open Prahari request per outlet and product, enforced by the database (no double
+    # clicks). Indents imported from the oil company's system are not constrained.
+    __table_args__ = (
+        Index(
+            "uq_indent_one_open_request",
+            "outlet_id",
+            "product_code",
+            unique=True,
+            postgresql_where=text("status = 'Requested' AND source = 'prahari'"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     indent_no: Mapped[str] = mapped_column(String(24), unique=True)

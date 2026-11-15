@@ -81,8 +81,8 @@ class OutletState:
     open_indents: list[Indent] = field(default_factory=list)
     receipts: list[Receipt] = field(default_factory=list)
     licences: list[tuple[Licence, int]] = field(default_factory=list)  # (licence, days left)
-    # Alert keys (or prefixes) whose condition can't be judged for lack of data. The rules engine
-    # leaves matching alerts as they are instead of resolving them.
+    # Alert keys whose condition can't be judged for lack of data. The rules engine leaves those
+    # alerts as they are instead of resolving them.
     unknown: set[str] = field(default_factory=set)
 
     @property

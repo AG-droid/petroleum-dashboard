@@ -188,3 +188,58 @@ def test_unanswered_request_stops_covering_after_its_validity(session: Session, 
     session.flush()
     run_rules(session, settings)
     assert "dry:GGN-104:HSD" in _active(session)  # nobody acted on the request: back to critical
+
+
+def test_unknown_keys_match_exactly_not_by_prefix(session: Session, settings: Settings) -> None:
+    """An unknown 'var:GGN-10' must not keep 'var:GGN-104' alive (codes of different lengths)."""
+    from prahari.models import Outlet
+
+    outlet = session.scalar(select(Outlet).where(Outlet.code == "GGN-121"))
+    assert outlet is not None
+    stale = Alert(
+        key="var:GGN-12",
+        rule="var",
+        severity="high",
+        category="Stock",
+        outlet_id=outlet.id,
+        title="t",
+        detail="d",
+        status="open",
+    )
+    session.add(stale)
+    session.flush()
+    settings.rules.variation_pct = 5.0  # GGN-121's variation is now fine
+    run_rules(session, settings)
+    assert "var:GGN-121" not in _active(session)
+
+
+def test_re_request_after_expiry_creates_a_new_indent(session: Session, settings: Settings) -> None:
+    today = business_date(datetime.now(UTC), settings.tz, settings.business_day_start_hour)
+    first, _ = actions.request_priority_indent(
+        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today, valid_for=timedelta(hours=24)
+    )
+    first.created_at = datetime.now(UTC) - timedelta(hours=25)
+    session.flush()
+    second, created = actions.request_priority_indent(
+        session, "GGN-104", "so-test", product="HSD", qty_kl=20, today=today, valid_for=timedelta(hours=24)
+    )
+    session.refresh(first)
+    assert created and second.id != first.id and first.status == "Cancelled"
+    assert len(second.indent_no) <= 24
+
+
+def test_lock_timeout_keeps_the_users_action(session: Session, settings: Settings) -> None:
+    """If a rules run can't get the lock in time, the action in the same transaction still stands."""
+    import psycopg
+
+    from prahari.models import AuditLog
+    from prahari.rules.engine import _LOCK_ID
+
+    url = settings.database_url.replace("postgresql+psycopg://", "postgresql://")
+    with psycopg.connect(url) as other:  # another transaction holds the rules lock
+        other.execute("SELECT pg_advisory_xact_lock(%s)", (_LOCK_ID,))
+        actions.acknowledge_alert(session, _active(session)["var:GGN-121"].id, "so-test")
+        summary = run_rules(session, settings, wait=True, lock_wait="200ms")
+        assert summary.skipped
+        session.flush()  # the transaction is still usable
+        assert session.scalar(select(AuditLog).where(AuditLog.action == "alert.acknowledge")) is not None

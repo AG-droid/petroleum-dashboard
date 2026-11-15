@@ -6,16 +6,19 @@ a priority indent is a *request* to the supply team, not a truck appearing out o
 
 from __future__ import annotations
 
+import secrets
 from datetime import date, timedelta
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from prahari.domain.time import now_utc
 from prahari.models import Alert, AuditLog, Indent, Outlet, Receipt
 from prahari.models.ops import ALERT_ACKNOWLEDGED, ALERT_OPEN
-from prahari.models.supply import INDENT_COVERING, INDENT_ON_HOLD, INDENT_REQUESTED
+from prahari.models.supply import INDENT_CANCELLED, INDENT_COVERING, INDENT_ON_HOLD, INDENT_REQUESTED
+
+PRAHARI_SOURCE = "prahari"  # indents raised from the dashboard (vs "import")
 
 
 class NotFoundError(LookupError):
@@ -58,8 +61,9 @@ def request_priority_indent(
     """Raise a priority indent for an outlet/product; returns ``(indent, created)``.
 
     Idempotent: while an indent for the product is pending, dispatched, or requested within
-    ``valid_for``, that one is returned. The number is unique per outlet, product and day, and the
-    insert ignores a conflict, so two simultaneous clicks can't create two indents.
+    ``valid_for``, that one is returned. Requests older than ``valid_for`` are cancelled first. A
+    partial unique index allows one open request per outlet and product, so two simultaneous
+    clicks can't create two.
     """
     outlet = session.scalar(select(Outlet).where(Outlet.code == outlet_code))
     if outlet is None:
@@ -67,40 +71,60 @@ def request_priority_indent(
     if product not in {t.product_code for t in outlet.tanks}:
         raise ConflictError(f"{outlet_code} has no {product} tank")
     fresh_since = now_utc() - valid_for
-    existing = session.scalar(
-        select(Indent)
+    # A request nobody acted on within its validity is closed, so a new one can be raised.
+    session.execute(
+        update(Indent)
         .where(
             Indent.outlet_id == outlet.id,
             Indent.product_code == product,
-            Indent.status.in_(INDENT_COVERING),
-            or_(Indent.status != INDENT_REQUESTED, Indent.created_at >= fresh_since),
+            Indent.status == INDENT_REQUESTED,
+            Indent.source == PRAHARI_SOURCE,
+            Indent.created_at < fresh_since,
+        )
+        .values(status=INDENT_CANCELLED, hold_reason="Expired: no action on the request")
+    )
+    existing = session.scalar(
+        select(Indent)
+        .where(
+            Indent.outlet_id == outlet.id, Indent.product_code == product, Indent.status.in_(INDENT_COVERING)
         )
         .order_by(Indent.created_at.desc())
         .limit(1)
     )
     if existing is not None:
         return existing, False
-    indent_no = f"PRH-{today:%y%m%d}-{outlet_code}-{product}"
+    open_request = (Indent.outlet_id, Indent.product_code)
     inserted = session.scalar(
         insert(Indent)
         .values(
-            indent_no=indent_no,
+            indent_no=f"PRH-{today:%y%m%d}-{secrets.token_hex(3).upper()}",  # 17 chars, unique enough per day
             outlet_id=outlet.id,
             product_code=product,
             qty_kl=qty_kl,
             indent_date=today,
             status=INDENT_REQUESTED,
             is_priority=True,
-            source="prahari",
+            source=PRAHARI_SOURCE,
         )
-        .on_conflict_do_nothing(index_elements=["indent_no"])
+        # A concurrent click already created the open request: keep that one.
+        .on_conflict_do_nothing(
+            index_elements=list(open_request),
+            index_where=and_(Indent.status == INDENT_REQUESTED, Indent.source == PRAHARI_SOURCE),
+        )
         .returning(Indent.id)
     )
     indent = session.scalars(
-        select(Indent).where(Indent.indent_no == indent_no).execution_options(populate_existing=True)
+        select(Indent)
+        .where(
+            Indent.outlet_id == outlet.id,
+            Indent.product_code == product,
+            Indent.status == INDENT_REQUESTED,
+            Indent.source == PRAHARI_SOURCE,
+        )
+        .execution_options(populate_existing=True)
     ).one()
     if inserted is None:
-        return indent, False  # someone else created it a moment ago
+        return indent, False
     held = session.scalars(
         select(Indent.indent_no).where(
             Indent.outlet_id == outlet.id, Indent.product_code == product, Indent.status == INDENT_ON_HOLD

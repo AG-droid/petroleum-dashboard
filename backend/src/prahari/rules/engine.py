@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from prahari.config import RuleThresholds, Settings
@@ -213,7 +214,12 @@ class RunSummary:
 
 
 def run_rules(
-    session: Session, settings: Settings, *, at: datetime | None = None, wait: bool = False
+    session: Session,
+    settings: Settings,
+    *,
+    at: datetime | None = None,
+    wait: bool = False,
+    lock_wait: str = LOCK_WAIT,
 ) -> RunSummary:
     """Evaluate all rules and reconcile the alert table. Caller commits.
 
@@ -222,8 +228,15 @@ def run_rules(
     to ``LOCK_WAIT`` for a concurrent run to finish rather than returning stale alerts.
     """
     if wait:
-        session.execute(text(f"SET LOCAL lock_timeout = '{LOCK_WAIT}'"))
-        session.execute(text("SELECT pg_advisory_xact_lock(:id)"), {"id": _LOCK_ID})
+        try:
+            # Savepoint: if the wait times out, only this step is rolled back; the caller's action
+            # (an indent request, a hold, an upload) still commits and the scheduler catches up.
+            with session.begin_nested():
+                session.execute(text(f"SET LOCAL lock_timeout = '{lock_wait}'"))
+                session.execute(text("SELECT pg_advisory_xact_lock(:id)"), {"id": _LOCK_ID})
+        except OperationalError:
+            log.warning("rules engine busy for over %s; the next scheduled run will catch up", lock_wait)
+            return RunSummary(skipped=True)
     elif not session.scalar(text("SELECT pg_try_advisory_xact_lock(:id)"), {"id": _LOCK_ID}):
         log.info("rules engine already running elsewhere; skipping this run")
         return RunSummary(skipped=True)
@@ -231,7 +244,7 @@ def run_rules(
     states = compute_states(session, settings, at=now)
     specs = {s.key: s for s in evaluate(states, settings.rules)}
     # Conditions we couldn't judge (data not in yet, feed down) keep their current alerts.
-    unknown = tuple(u for st in states for u in st.unknown)
+    unknown = {u for st in states for u in st.unknown}  # full keys, matched exactly
     active = {a.key: a for a in session.scalars(select(Alert).where(Alert.status != ALERT_RESOLVED))}
     summary = RunSummary()
     for key, spec in specs.items():
@@ -273,7 +286,7 @@ def run_rules(
             alert.updated_at = now
             summary.updated += 1
     for key, alert in active.items():
-        if key not in specs and alert.rule in OWNED_RULES and not key.startswith(unknown):
+        if key not in specs and alert.rule in OWNED_RULES and key not in unknown:
             alert.status, alert.resolved_at, alert.updated_at = ALERT_RESOLVED, now, now
             summary.resolved += 1
     session.flush()

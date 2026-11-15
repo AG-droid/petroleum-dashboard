@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -20,6 +20,8 @@ from prahari.models.readings import SOURCE_AUTOMATION
 
 
 class TankLevel(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     tank_no: int = Field(ge=1)
     volume_l: float = Field(ge=0, description="Gross product volume reported by the tank gauge.")
     level_mm: float | None = Field(None, ge=0)
@@ -28,11 +30,15 @@ class TankLevel(BaseModel):
 
 
 class NozzleTotal(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     nozzle_no: int = Field(ge=1)
     totalizer_l: float = Field(ge=0)
 
 
 class SiteSnapshot(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     site_id: str = Field(min_length=1, max_length=16, description="The outlet's SAP customer code.")
     observed_at: AwareDatetime
     tanks: list[TankLevel] = Field(default_factory=list, max_length=20)
@@ -40,6 +46,8 @@ class SiteSnapshot(BaseModel):
 
 
 class AutomationBatch(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     snapshots: list[SiteSnapshot] = Field(max_length=2000)
 
 
@@ -53,7 +61,7 @@ class BatchResult(BaseModel):
 def store_batch(session: Session, batch: AutomationBatch) -> BatchResult:
     """Validate references and store readings. Unknown sites/tanks/nozzles are reported, not fatal."""
     outlets = {sap: oid for sap, oid in session.execute(select(Outlet.sap_code, Outlet.id))}
-    tanks = {(t.outlet_id, t.tank_no): t.id for t in session.scalars(select(Tank))}
+    tanks = {(t.outlet_id, t.tank_no): (t.id, t.capacity_kl * 1000) for t in session.scalars(select(Tank))}
     nozzles = {(n.outlet_id, n.nozzle_no): n.id for n in session.scalars(select(Nozzle))}
     tank_rows: list[dict[str, Any]] = []
     tot_rows: list[dict[str, Any]] = []
@@ -66,9 +74,15 @@ def store_batch(session: Session, batch: AutomationBatch) -> BatchResult:
             continue
         sites += 1
         for t in snap.tanks:
-            tid = tanks.get((oid, t.tank_no))
-            if tid is None:
+            known = tanks.get((oid, t.tank_no))
+            if known is None:
                 rejected.append(f"{snap.site_id}: unknown tank {t.tank_no}")
+                continue
+            tid, capacity_l = known
+            if t.volume_l > capacity_l * 1.02:  # gauges can over-read slightly; more is a fault
+                rejected.append(
+                    f"{snap.site_id}: tank {t.tank_no} volume {t.volume_l:.0f} L exceeds capacity"
+                )
                 continue
             tank_rows.append(
                 {

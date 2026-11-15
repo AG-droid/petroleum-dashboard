@@ -127,3 +127,47 @@ def test_upload_size_limit(client: TestClient, settings: Settings) -> None:
     settings.max_upload_mb = 1
     big = b"x" * (1024 * 1024 + 10)
     assert client.post("/api/v1/imports", files={"file": ("big.csv", big, "text/csv")}).status_code == 413
+
+
+def test_dashboard_dispatch_picks_the_product_with_nothing_coming(client: TestClient) -> None:
+    """GGN-114: petrol is low but a truck is dispatched; make diesel run dry too → diesel is requested."""
+    from sqlalchemy import select
+
+    from prahari.db.session import session_scope
+    from prahari.models import Outlet, TankReading
+
+    with session_scope() as s:
+        outlet = s.scalar(select(Outlet).where(Outlet.code == "GGN-114"))
+        assert outlet is not None
+        for tank in outlet.tanks:
+            if tank.product_code == "HSD":
+                for r in s.scalars(select(TankReading).where(TankReading.tank_id == tank.id)):
+                    r.volume_l = 20.0
+    r = client.post("/api/v1/outlets/GGN-114/priority-indent", json={})
+    assert r.status_code == 201 and r.json()["product_code"] == "HSD"
+
+
+def test_automation_rejects_infinity_and_overfull_tanks(client: TestClient) -> None:
+    sap = client.get("/api/v1/outlets/GGN-101").json()["sap_code"]
+    snap = {
+        "site_id": sap,
+        "observed_at": "2026-11-15T10:00:00+05:30",
+        "tanks": [{"tank_no": 1, "volume_l": 1.0}],
+    }
+    snap["tanks"][0]["volume_l"] = float("inf")
+    body = json.dumps({"snapshots": [snap]})  # serialised as the non-standard token Infinity
+    r = client.post("/api/v1/ingest/automation", content=body, headers={"Content-Type": "application/json"})
+    assert r.status_code == 422
+    over = client.post(
+        "/api/v1/ingest/automation",
+        json={
+            "snapshots": [
+                {
+                    "site_id": sap,
+                    "observed_at": "2026-11-15T10:00:00+05:30",
+                    "tanks": [{"tank_no": 1, "volume_l": 1e7}],
+                }
+            ]
+        },
+    )
+    assert "exceeds capacity" in over.json()["rejected"][0]
