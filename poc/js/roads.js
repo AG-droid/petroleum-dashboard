@@ -159,6 +159,10 @@
     const target = Bs[0].pt;
     const n = nodes.length;
     const g = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1), prevStep = new Array(n);
+    // Heuristic: straight-line time to the nearest target candidate at top speed. Other candidates
+    // lie within 2·SLACK of it, and reaching any of them costs access() = dist/3 s, more than the
+    // 2·dist/MAX_MS (≈ dist/6 s) the heuristic could overestimate by, so A* stays exact. Keep
+    // access() above 2/MAX_MS per metre if either constant changes.
     const h = (i) => metres(nodes[i], target) / MAX_MS;
     const heap = new Heap();
     // Getting from the point to a road candidate costs a little, so the nearest road wins ties.
@@ -268,9 +272,16 @@
    */
   function detour(routePts, at, km) {
     const target = km * 1000;
+    // Distance from p to the planned route's line (metres).
     const minRouteDist = (p) => {
+      const k = Math.cos(p[1] * Math.PI / 180);
       let d = Infinity;
-      for (let i = 0; i < routePts.length; i += 3) d = Math.min(d, metres(p, routePts[i]));
+      for (let i = 1; i < routePts.length; i++) {
+        const a = routePts[i - 1], b = routePts[i];
+        const dx = (b[0] - a[0]) * k, dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+        const f = L2 ? Math.max(0, Math.min(1, (((p[0] - a[0]) * k) * dx + (p[1] - a[1]) * dy) / L2)) : 0;
+        d = Math.min(d, metres(p, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]));
+      }
       return d;
     };
     let best = null, bestScore = -Infinity;
@@ -283,7 +294,14 @@
     });
     if (best == null) return null;
     const r = route(at, nodes[best]);
-    return r && { pts: r.pts, km: r.km, offKm: minRouteDist(nodes[best]) / 1000 };
+    if (!r) return null;
+    // The way there may share a stretch with the planned route; the detour starts where it leaves.
+    let first = 0;
+    while (first < r.pts.length - 2 && minRouteDist(r.pts[first + 1]) < 50) first++;
+    const pts = r.pts.slice(first);
+    let m = 0;
+    for (let i = 1; i < pts.length; i++) m += metres(pts[i - 1], pts[i]);
+    return { pts, km: m / 1000, offKm: minRouteDist(nodes[best]) / 1000 };
   }
 
   Object.assign(RoadNet, {

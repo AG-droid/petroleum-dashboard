@@ -348,7 +348,7 @@
   // With real roads, the truck has turned off onto an actual side road instead of floating 1 km away.
   if (RN) {
     const at = pointAt(th.route, th.progress);
-    th.detour = RN.detour(th.route.pts, [at.lng, at.lat], 1.2);
+    th.detour = RN.detour(th.route.pts, [at.lng, at.lat], 1.0);
     if (th.detour) th.offset = null;
   }
   for (let i = 0; i < 9; i++) { const t = makeTanker(pick(destPool), 'In transit'); t.progress = r(0.05, 0.9); }

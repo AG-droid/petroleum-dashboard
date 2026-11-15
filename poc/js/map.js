@@ -61,19 +61,13 @@
       // Dark casing under a light line keeps the edge readable on imagery
       map.addLayer({ id: 'area-casing', type: 'line', source: 'area', layout: { 'line-join': 'round' }, paint: { 'line-color': '#000000', 'line-width': 4, 'line-opacity': 0.45, 'line-blur': 1 } });
       map.addLayer({ id: 'area-line', type: 'line', source: 'area', layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 1.4, 'line-dasharray': [4, 3], 'line-opacity': 0.55 } });
-      // The roads trucks can use (OpenStreetMap, motorway to tertiary), off by default.
-      if (window.RoadNet && RoadNet.ok) {
-        map.addSource('roadnet', { type: 'geojson', data: RoadNet.geojson(), attribution: 'Routing data © OpenStreetMap contributors (ODbL)' });
-        map.addLayer({ id: 'roadnet', type: 'line', source: 'roadnet', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: {
-          'line-color': ['match', ['get', 'cls'], 0, '#7aa7ff', 1, '#7aa7ff', 2, '#9fb6d6', '#5d6773'],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 9, ['match', ['get', 'cls'], 0, 1.6, 1, 1.6, 2, 1.1, 0.5], 14, ['match', ['get', 'cls'], 0, 4, 1, 4, 2, 3, 1.5]],
-          'line-opacity': 0.55 } });
-      }
       // Geofence corridor around the selected truck's planned route: ±250 m on the ground at any zoom.
       map.addSource('corridor', { type: 'geojson', data: corridorGeo() });
       map.addLayer({ id: 'corridor', type: 'line', source: 'corridor', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
         'line-color': '#7aa7ff', 'line-opacity': 0.13, 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 8, metresToPx(500, 8), 18, metresToPx(500, 18)] } });
-      map.addSource('routes', { type: 'geojson', data: routesGeo() });
+      // Routes, outlet positions and the corridor all derive from OpenStreetMap roads: credit it here,
+      // on a source that is always shown (the satellite basemap's own credit doesn't mention OSM).
+      map.addSource('routes', { type: 'geojson', data: routesGeo(), attribution: window.RoadNet && RoadNet.ok ? 'Routes © OpenStreetMap contributors (ODbL)' : undefined });
       map.addLayer({ id: 'routes-line', type: 'line', source: 'routes', filter: ['!=', ['get', 'kind'], 'detour'], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
         'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'sel'], 2.6, 1.3],
         'line-opacity': ['case', ['==', ['get', 'kind'], 'done'], 0.28, ['get', 'sel'], 0.95, 0.5], 'line-dasharray': [2, 2] } });
@@ -173,6 +167,18 @@
       ${t.route.via && t.route.via[0] ? `<div class="tt-row"><span>Via</span><span>${esc(t.route.via[0].length > 26 ? t.route.via[0].slice(0, 25) + '…' : t.route.via[0])}</span></div>` : ''}`;
   }
 
+  // The roads trucks can use (OpenStreetMap, motorway to tertiary). Built on first use: it is
+  // 20,000 lines and off by default. Drawn under the delivery routes.
+  function addRoadNetLayer() {
+    if (!(window.RoadNet && RoadNet.ok)) return;
+    const map = MV.map;
+    map.addSource('roadnet', { type: 'geojson', data: RoadNet.geojson() });
+    map.addLayer({ id: 'roadnet', type: 'line', source: 'roadnet', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: {
+      'line-color': ['match', ['get', 'cls'], 0, '#7aa7ff', 1, '#7aa7ff', 2, '#9fb6d6', '#5d6773'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 9, ['match', ['get', 'cls'], 0, 1.6, 1, 1.6, 2, 1.1, 0.5], 14, ['match', ['get', 'cls'], 0, 4, 1, 4, 2, 3, 1.5]],
+      'line-opacity': 0.55 } }, 'corridor');
+  }
+
   // Pixels a ground distance covers at a zoom level, at the sales area's latitude (for MapLibre's
   // exponential zoom interpolation, which then keeps the width true on the ground in between).
   function metresToPx(m, zoom) { return m / (156543.03 * Math.cos(28.4 * Math.PI / 180) / Math.pow(2, zoom)); }
@@ -230,8 +236,8 @@
     const cor = MV.map.getSource('corridor');
     // Redraw only when the selection or that truck's route (a new trip) changes.
     const selT = MV.selTanker && tankers.find((x) => x.id === MV.selTanker);
-    const corKey = selT ? selT.route : null;
-    if (cor && cor._for !== corKey) { cor._for = corKey; cor.setData(corridorGeo()); }
+    const corKey = selT ? selT.id + '|' + (selT.status === 'Loading') : null;
+    if (cor && (cor._for !== corKey || cor._route !== (selT && selT.route))) { cor._for = corKey; cor._route = selT && selT.route; cor.setData(corridorGeo()); }
     if (Sim.t % 5 === 0) { const c = MV.map.getSource('cols'); if (c) c.setData(columnsGeo()); }
   };
 
@@ -243,7 +249,10 @@
     if (name === 'tankers') show(MV.tankerMk);
     if (name === 'depots') show(MV.depotMk);
     if (name === 'routes') ['routes-line', 'routes-detour', 'corridor'].forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
-    if (name === 'roadnet' && map.getLayer('roadnet')) map.setLayoutProperty('roadnet', 'visibility', vis);
+    if (name === 'roadnet') {
+      if (on && !map.getLayer('roadnet')) addRoadNetLayer();
+      if (map.getLayer('roadnet')) map.setLayoutProperty('roadnet', 'visibility', vis);
+    }
     if (name === 'area') ['area-mask', 'area-fill', 'area-casing', 'area-line'].forEach((l) => map.setLayoutProperty(l, 'visibility', vis));
     if (name === 'competitors') map.setLayoutProperty('comp-dot', 'visibility', vis);
     if (name === 'heat') map.setLayoutProperty('heat', 'visibility', vis);
