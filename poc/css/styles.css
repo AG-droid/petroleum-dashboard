@@ -58,7 +58,8 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
 .demo-tag { font-size: 11.5px; color: var(--text-3); border: 1px solid var(--border-2); border-radius: 20px; padding: 2px 9px; }
 .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: middle; }
 .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); color: var(--text); display: grid; place-items: center; font-size: 11px; font-weight: 600; }
-@media (max-width: 1280px) { .demo-tag, #clock { display: none; } .search { width: 220px; } }
+@media (max-width: 1280px) { #clock { display: none; } .search { width: 210px; white-space: nowrap; overflow: hidden; } .search kbd { display: none; } }
+@media (max-width: 1100px) { .search { width: 150px; overflow: hidden; white-space: nowrap; } .search kbd { display: none; } .area-select .faint { display: none; } }
 
 /* ---------- Rail ---------- */
 #rail { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; border-right: 1px solid var(--border); background: var(--bg); z-index: 15; }
@@ -107,6 +108,9 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
 .panel { position: absolute; top: 12px; bottom: 12px; z-index: 8; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
 #leftPanel { left: 12px; width: 340px; }
 #rightPanel { right: 12px; width: 420px; animation: slideIn .2s ease-out; }
+@media (max-width: 1366px) { #leftPanel { width: 300px; } #rightPanel { width: 380px; } #stage.right-open #mapControls { right: 404px; } #rightPanel .tabs { gap: 11px; } .tab { font-size: 12px; } }
+@media (max-width: 1100px) { #leftPanel { width: 280px; } #rightPanel { width: 340px; } #stage.right-open #mapControls { right: 364px; top: auto; bottom: 12px; } #legend { display: none; } }
+#mapNotice { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 7; max-width: min(520px, 60vw); padding: 8px 14px; border-radius: 10px; background: rgba(20,21,24,.94); border: 1px solid var(--warn); color: var(--text); font-size: 12.5px; text-align: center; }
 @keyframes slideIn { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
 .p-head { padding: 16px 18px 14px; }
 .p-title { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
@@ -132,7 +136,8 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
 .c-ok { color: var(--ok) !important; } .c-warn { color: var(--warn) !important; } .c-crit { color: var(--crit) !important; } .c-off { color: var(--off) !important; } .c-acc { color: var(--accent) !important; } .c-mute { color: var(--text-3) !important; }
 
 /* Tabs */
-.tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--border); padding: 0 18px; }
+.tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--border); padding: 0 18px; overflow-x: auto; scrollbar-width: none; }
+.tab { white-space: nowrap; flex: none; }
 .tab { padding: 10px 0 9px; color: var(--text-3); font-size: 12.5px; font-weight: 500; border-bottom: 1.5px solid transparent; margin-bottom: -1px; display: flex; gap: 6px; align-items: center; }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--text); border-bottom-color: var(--text); }

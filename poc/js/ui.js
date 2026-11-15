@@ -158,7 +158,7 @@
     $('#leftPanel').innerHTML = `
       <div class="p-head">
         <div class="p-title">Gurugram Sales Area</div>
-        <div class="p-sub">${outlets.length} outlets · ${depots.length} supply points · ${tankers.length} trucks</div>
+        <div class="p-sub" id="lpSub"></div>
       </div>
       <div style="padding:0 18px 16px">
         <div class="stats">
@@ -198,6 +198,7 @@
     const s = areaStats();
     const pct = s.todayKL / Math.max(0.01, s.expectedKL);
     const att = s.warn + s.crit + s.off;
+    $('#lpSub').textContent = `${outlets.length} outlets · ${depots.length} supply points · ${tankers.length} trucks`;
     $('#stToday').innerHTML = `${fmt.kl(s.todayKL, 0)}<small>kL</small>`;
     $('#stTodayF').innerHTML = `<span class="${achCls(pct)}">${fmt.pct(pct)}</span> of plan so far`;
     $('#stMonth').innerHTML = `<span class="${achCls(s.ach)}">${fmt.pct(s.ach)}</span>`;
@@ -230,7 +231,7 @@
     } else {
       const sm = summary(o);
       title = o.name;
-      desc = sm.s === 'ok' ? a.detail : sm.t;
+      desc = a.expires || sm.s === 'ok' ? a.detail : sm.t;
       if (a.key.startsWith('dry:')) acts.push(`<button class="btn sm primary" data-act="dispatch" data-id="${o.id}">${I.truck}Send a truck now</button>`);
       if (a.key.startsWith('den:')) acts.push(`<button class="btn sm primary" data-act="hold" data-id="${o.id}">${I.flask}Hold tank &amp; test</button>`);
       if (a.key.startsWith('ra:')) acts.push(`<button class="btn sm primary" data-act="ra" data-id="${o.id}">${I.plug}Reconnect</button>`);

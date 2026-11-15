@@ -8,3 +8,6 @@ node_modules/
 
 # Private notes kept locally, never published
 private/
+
+# Office lock files
+~$*

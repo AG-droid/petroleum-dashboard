@@ -24,7 +24,9 @@
   // ---------- story data ----------
   const S = DB.stories;
   const RSS = S.dryout, DEN = S.density, DEC = S.decline;
-  const HALTED = () => DB.tankers.find((t) => t.status === 'Halted') || DB.tankers[0];
+  const HALT_ID = (DB.tankers.find((t) => t.status === 'Halted') || DB.tankers[0]).id;
+  const HALTED = () => DB.tankerById(HALT_ID);
+  const dur = (d) => UI.fmt.dur(d);
 
   // ---------- helpers that put the dashboard into a known state ----------
   function lpTab(tab) { const b = $(`#lpTabs [data-lp="${tab}"]`); if (b) b.click(); }
@@ -80,7 +82,7 @@
     { setup: () => home(false), target: '#lpBody', title: 'A to-do list that writes itself',
       text: 'Prahari reads everything and lists what to do first, most urgent at the top, in plain language. Each item comes with the fix as a button.' },
     { setup: () => home(false), click: () => $(`.att-title[data-outlet="${RSS.id}"]`), wait: 2600, ensure: async () => { if (UI.state.selected !== RSS.id) await openOutlet(RSS, 'overview'); }, target: '.od-summary', title: 'Open any outlet',
-      text: 'One click flies the map down to the pump in 3D satellite view and opens its page. The first line says what matters: <b>diesel runs out in about 13 hours</b>, and the order is stuck on payment.',
+      text: () => `One click flies the map down to the pump in 3D satellite view and opens its page. The first line says what matters: <b>diesel runs out in ${dur(RSS.m.minDays)}</b>${RSS.pendingIndent ? ', and the order is stuck on payment' : ''}.`,
       back: async () => openOutlet(RSS, 'overview') },
     { setup: () => openOutlet(RSS, 'overview'), target: '#ovTanks', title: 'Live tank levels',
       text: 'Read straight from the tank gauges: how much fuel is in each tank, and how many days it will last at today\'s rate of sales.' },
@@ -90,9 +92,9 @@
     { setup: () => openOutlet(RSS, 'overview'), click: () => $('#odHead [data-oact="dispatch"]'), wait: 1600, ensure: async () => { if (Sim.alerts.some((a) => a.key === 'dry:' + RSS.id)) { Sim.actions.priorityDispatch(RSS); await sleep(150); } }, target: '.od-summary', title: 'Fix it in one tap',
       text: 'Press <b>Send a truck now</b> and a tanker is assigned from the nearest depot, and the dealer is asked to clear the payment. The urgent alert clears by itself.' },
     { setup: () => home(false), click: () => $(`.att-title[data-tanker="${HALTED().id}"]`), wait: 2000, ensure: async () => { if (!$('#tkCall')) { UI.selectTanker(HALTED().id); await waitFor('#tkCall'); } }, target: '#rightPanel .od-summary', title: 'Catch fuel theft on the road',
-      text: 'This tanker has stopped off its route for 47 minutes with its seals unchecked, the classic pattern of pilferage. Prahari spots it from the tanker\'s GPS automatically.',
+      text: () => { const t = HALTED(); const min = t.status === 'Halted' ? Math.round(t.haltSec / 60) : 0; return `This tanker ${min ? `has been stopped off its route for ${min} minutes` : 'stopped off its route'} with its seals unchecked, the classic pattern of pilferage. Prahari spots it from the tanker\'s GPS automatically.`; },
       back: async () => { home(false); UI.selectTanker(HALTED().id); await waitFor('#tkCall'); } },
-    { setup: async () => { if (!$('#tkCall')) { home(false); UI.selectTanker(HALTED().id); await waitFor('#tkCall'); } }, click: () => $('#tkCall'), wait: 1400, ensure: async () => { const t = DB.tankers.find((x) => x.status === 'Halted'); if (t) { Sim.actions.contactDriver(t); UI.selectTanker(t.id); await sleep(200); } }, target: '#rightPanel .od-summary', title: 'Act straight away',
+    { setup: async () => { if (!$('#tkCall')) { home(false); UI.selectTanker(HALTED().id); await waitFor('#tkCall'); } }, click: () => $('#tkCall'), wait: 1400, ensure: async () => { const t = HALTED(); if (t.status === 'Halted') { Sim.actions.contactDriver(t); UI.selectTanker(t.id); await sleep(200); } }, target: '#rightPanel .od-summary', title: 'Act straight away',
       text: 'Call the driver right from the screen. The tanker goes back on its route, and the incident is logged for the transporter.' },
     { setup: () => openOutlet(DEN, 'supply'), pre: () => { const t = $('#odBody table'); return t && t.closest('.section'); }, click: () => $('#odHead [data-oact="hold"]'), wait: 1400, ensure: async () => { if (DEN.densityDev > 3) { Sim.actions.holdTank(DEN); await openOutlet(DEN, 'supply'); } },
       target: () => { const t = $('#odBody table'); return t && t.closest('.section'); }, title: 'Stop bad fuel before it is sold',
@@ -113,7 +115,7 @@
         input.value = '';
         await cursorTo(input); if (tok !== T.token) return;
         for (const ch of 'Which outlets may run dry?') { if (tok !== T.token) return; input.value += ch; await sleep(55); }
-        await cursorClick(() => $('#cpGo'));
+        await cursorClick(() => $('#cpGo'), tok);
         await sleep(1600);
       }, target: '#cpMsgs', title: 'Just ask',
       text: 'The assistant answers questions about the area in plain language, with links straight to the outlets it mentions.' },
@@ -176,7 +178,7 @@
       <div class="tc-progress"><i style="width:${((idx + 1) / N) * 100}%"></i></div>
       <div class="tc-step">${idx + 1} of ${N}</div>
       <h3>${s.title}</h3>
-      <p>${s.text}</p>
+      <p>${typeof s.text === 'function' ? s.text() : s.text}</p>
       <div class="tc-ctrl">
         <button class="btn sm ghost" data-tour="prev" ${idx === 0 ? 'disabled' : ''}>Back</button>
         <button class="btn sm primary" data-tour="next">Next</button>
@@ -197,11 +199,13 @@
     cursorPos(r.x + Math.min(r.w * 0.5, 60), r.y + r.h * 0.55);
     await sleep(950);
   }
-  async function cursorClick(get) {
-    const first = await waitFor(get, 3000);
-    if (!first) return false;
+  async function cursorClick(get, tok) {
+    const first = await waitFor(get, 1200);
+    if (!first || (tok !== undefined && tok !== T.token)) return false;
     await cursorTo(first);
+    if (tok !== undefined && tok !== T.token) return false; // the presenter moved on while the cursor travelled
     const el = get() || first; // elements may re-render while the cursor travels
+    if (!el.isConnected) return false;
     cursor.classList.add('click');
     setTimeout(() => cursor.classList.remove('click'), 450);
     await sleep(180);
@@ -232,17 +236,21 @@
         await sleep(dir === 0 ? 300 : 450);
         const forward = dir > 0;
         if (forward && (s.pre || s.click || s.run)) {
-          const first = s.pre ? await resolve(s.pre) : s.click ? await resolve(s.click) : await resolve(s.target);
+          const clickEl = s.click ? await waitFor(s.click, 1200) : null;
+          if (tok !== T.token) return;
+          const first = s.pre ? await resolve(s.pre) : clickEl ? rectOf(clickEl) : await resolve(s.target);
+          if (tok !== T.token) return;
           spotTo(first); showCard(s, first);
           if (s.pre) await sleep(2200);
           if (tok !== T.token) return;
-          if (s.click) {
-            const cr = await resolve(s.click);
-            if (cr) { spotTo(cr); await sleep(300); await cursorClick(s.click); }
+          let acted = false;
+          if (clickEl) {
+            const cr = rectOf(s.click() || clickEl);
+            if (cr) { spotTo(cr); await sleep(300); if (tok !== T.token) return; acted = await cursorClick(s.click, tok); }
           }
-          if (s.run) await s.run(tok);
+          if (s.run) { await s.run(tok); acted = true; }
           if (tok !== T.token) return;
-          await sleep(s.wait || 1200);
+          await sleep(acted ? (s.wait || 1200) : 200);
           // If a click didn't take (e.g. the list re-rendered under the cursor), finish the action directly
           if (s.ensure && tok === T.token) await s.ensure();
         } else cursor.classList.add('hidden');

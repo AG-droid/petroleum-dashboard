@@ -18,7 +18,8 @@
   function padding() {
     const st = document.getElementById('stage');
     const leftOpen = !document.getElementById('leftPanel').classList.contains('hidden');
-    return { top: 70, bottom: 60, left: leftOpen ? 380 : 60, right: st.classList.contains('right-open') ? 460 : 60 };
+    const w = (id) => document.getElementById(id).offsetWidth || 0;
+    return { top: 70, bottom: 60, left: leftOpen ? w('leftPanel') + 40 : 60, right: st.classList.contains('right-open') ? w('rightPanel') + 40 : 60 };
   }
 
   MV.init = function (onReady) {
@@ -87,6 +88,15 @@
       MV.ready = true;
       onReady && onReady();
     };
+    // If map images can't be fetched (no internet, blocked), say so instead of showing dots on black
+    let tileErrors = 0, tileOk = false;
+    const notice = (msg) => { const n = document.getElementById('mapNotice'); if (!n) return; n.textContent = msg || ''; n.classList.toggle('hidden', !msg); };
+    const BASE = ['dark', 'darkref', 'sat', 'roads', 'labels'];
+    map.on('error', (e) => {
+      if (!e || !BASE.includes(e.sourceId)) { if (e && e.error) console.warn('map:', e.error.message || e.error); return; }
+      if (++tileErrors >= 6 && !tileOk) notice('Map images could not load, probably no internet connection. Outlets, trucks and all the data still work.');
+    });
+    map.on('sourcedata', (e) => { if (e.tile && BASE.includes(e.sourceId)) { tileOk = true; tileErrors = 0; notice(''); } });
     map.on('style.load', setup);
     map.on('styledata', setup);
     map.on('load', setup);

@@ -202,22 +202,28 @@
       const e = { ts: Date.now(), outletId: o.id, camId: cam.id, tag, text: fn(o) };
       Sim.aiEvents.unshift(e);
       if (Sim.aiEvents.length > 250) Sim.aiEvents.length = 250;
-      if (tag === 'PPE' && rnd() < 0.5) upsert('ppe:' + o.id + ':' + Sim.t, { sev: 'high', cat: 'Security', outletId: o.id, title: `Unsafe unloading at ${o.name}`, detail: e.text, expires: Date.now() + 120000 });
+      if (tag === 'PPE' && rnd() < 0.5) upsert('ppe:' + o.id + ':' + Sim.t, { sev: 'medium', cat: 'Security', outletId: o.id, title: `Unsafe unloading at ${o.name}`, detail: e.text, expires: Date.now() + 120000 });
       if (tag === 'QUEUE' && rnd() < 0.35) upsert('q:' + o.id + ':' + Sim.t, { sev: 'low', cat: 'Security', outletId: o.id, title: `Long queue at ${o.name}`, detail: e.text + '. Consider opening more nozzles.', expires: Date.now() + 120000 });
     }
     if (Sim.t % 23 === 0 && Sim.t > 0) {
-      const x = rnd();
-      const o = pick(online);
-      if (x < 0.3) {
+      const storyIds = new Set(Object.values(DB.stories).map((q) => q.id));
+      const brokenNow = outlets.filter((q) => q.cameras.some((c) => !c.online) || q.nozzles.some((n) => n.status === 'Fault')).length;
+      const room = brokenNow < Sim.baseBroken; // random faults never push the area above where it started
+      let x = rnd();
+      if (!room && x < 0.5) x = 0.5 + rnd() * 0.3; // turn a new fault into a repair
+      const calm = online.filter((q) => !storyIds.has(q.id));
+      const o = pick(calm.length ? calm : online);
+      if (x < 0.25) {
         const c = o.cameras.find((c) => c.online);
         if (c) { c.online = false; pushEvent('alert', `CCTV ${c.label} went offline at ${o.name}`, o.id); }
-      } else if (x < 0.5) {
+      } else if (x < 0.4) {
         const n = o.nozzles.find((n) => n.status !== 'Fault');
         if (n) { n.status = 'Fault'; pushEvent('alert', `Nozzle ${n.id} out of service at ${o.name}`, o.id); }
-      } else if (x < 0.8) {
-        // repairs
-        const broken = outlets.filter((q) => q.raOnline && (q.cameras.some((c) => !c.online) || q.nozzles.some((n) => n.status === 'Fault')) && q !== DB.stories.offline);
-        const q = pick(broken.length ? broken : [o]);
+      } else if (x < 0.85) {
+        // repairs (story outlets keep their scripted state)
+        const broken = outlets.filter((q) => q.raOnline && !storyIds.has(q.id) && (q.cameras.some((c) => !c.online) || q.nozzles.some((n) => n.status === 'Fault')));
+        if (!broken.length) return;
+        const q = pick(broken);
         const c = q.cameras.find((c) => !c.online);
         const n = q.nozzles.find((n) => n.status === 'Fault');
         if (c) { c.online = true; pushEvent('ok', `CCTV ${c.label} back online at ${q.name}`, q.id); }
@@ -324,13 +330,15 @@
   Sim.actions = {
     ack(id) { const a = Sim.alerts.find((x) => x.id === id); if (a) { a.status = 'ack'; Sim.alertsVersion++; } },
     priorityDispatch(o) {
+      const existing = enRouteTanker(o);
+      if (existing) return existing; // already covered; don't send a second truck
       o.pendingIndent = null;
-      let t = tankers.find((x) => x.status === 'Loading' && x.depotId === DB.util.nearestDepot(o).id) || tankers.find((x) => x.status === 'Returning');
-      if (!t) t = DB.makeTanker(o, 'Loading');
+      // A spare truck from the nearest depot's transporter pool. Trucks already on the road keep their jobs.
+      const t = DB.makeTanker(o, 'Loading');
       assign(t, o);
       t.status = 'Loading'; t.timer = 8;
       pushEvent('info', `Truck ${t.plate} assigned to ${o.name} (priority)`, o.id);
-      evaluate(); Sim.alertsVersion++;
+      compute(o); evaluate(); Sim.alertsVersion++;
       return t;
     },
     contactDriver(t) {
@@ -339,11 +347,16 @@
       evaluate();
     },
     resetRA(o) { o.raOnline = true; pushEvent('ok', `Automation link restored at ${o.name}`, o.id); evaluate(); },
-    holdTank(o) { o.densityDev = 0; o.indents[0].status = 'Tank held, sample sent for testing'; pushEvent('info', `Diesel tank held and sample sent for testing at ${o.name}`, o.id); evaluate(); },
+    holdTank(o) {
+      o.densityDev = 0;
+      const ind = o.indents.find((i) => /under review/i.test(i.status)) || o.indents.find((i) => i.product === 'HSD' && Math.abs(i.obsDiff) > 3) || o.indents.find((i) => i.product === 'HSD');
+      if (ind) ind.status = 'Tank held, sample sent for testing';
+      pushEvent('info', `Diesel tank held and sample sent for testing at ${o.name}`, o.id); evaluate(); },
     resolveIrregularity(o, i) { o.compliance.irregularities[i].status = 'Closed'; evaluate(); },
   };
 
   Sim.start = function () {
+    Sim.baseBroken = outlets.filter((q) => q.cameras.some((c) => !c.online) || q.nozzles.some((n) => n.status === 'Fault')).length;
     outlets.forEach(compute);
     evaluate();
     Sim.alerts.forEach((a) => { a.fresh = false; a.ts = Date.now() - Math.floor(rnd() * 3 * 3600 * 1000); });

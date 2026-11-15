@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prahari · Gurugram Sales Area</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link href="vendor/maplibre-gl-4.7.1/maplibre-gl.css" rel="stylesheet">
 <link href="css/styles.css" rel="stylesheet">
 </head>
 <body>
@@ -70,6 +71,8 @@
       </div>
     </div>
 
+    <div id="mapNotice" class="hidden"></div>
+
     <div id="legend">
       <span><i class="dot ok"></i>Running normally</span>
       <span><i class="dot warn"></i>Needs attention</span>
@@ -93,7 +96,7 @@
 <div id="toasts"></div>
 <div id="tooltip"></div>
 
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
 <script src="js/data.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/charts.js"></script>

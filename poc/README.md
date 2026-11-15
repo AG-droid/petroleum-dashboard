@@ -14,7 +14,7 @@ python3 -m http.server 8080
 # then open http://localhost:8080
 ```
 
-An internet connection is needed for the satellite imagery, map library and fonts. Best viewed in Chrome at 1440 px width or more.
+An internet connection is needed for the map and satellite images and the fonts. The map library is bundled in `vendor/`, so the dashboard still runs offline, with a notice in place of the map images. Best viewed in Chrome at 1280 px width or more.
 
 ## What's in it
 
@@ -53,6 +53,7 @@ An internet connection is needed for the satellite imagery, map library and font
 poc/
 ├── index.html        layout shell
 ├── css/styles.css    theme and components
+├── vendor/           bundled MapLibre GL JS 4.7.1 (BSD-3, licence included)
 └── js/
     ├── data.js       synthetic data generator (outlets, tanks, trucks, competitors, scripted storylines)
     ├── sim.js        1-second live simulation + alert rules engine + UI actions
@@ -60,6 +61,7 @@ poc/
     ├── cctv.js       procedurally drawn CCTV feeds with AI overlay
     ├── charts.js     small canvas charts
     ├── ui.js         panels, views, outlet 360, copilot, search
+    ├── tour.js       Present mode (guided walkthrough)
     └── main.js       startup
 ```
 
