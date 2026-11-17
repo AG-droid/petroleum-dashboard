@@ -4,6 +4,8 @@ The dealer's side of Prahari: one place to see every outlet, know what to do nex
 
 Everything is **synthetic**. The demo dealer runs two outlets from the Sales Officer dashboard's world: **990104 Royal Service Station** (highway) and **990118 Aravali Petroleum** (city). The two apps show the same outlets, tanks, depots and roads.
 
+![The dealer's outlets on the map with the Priorities list](../../docs/screenshots/11-dealer-map.png)
+
 ## How to run
 
 From the repository root:

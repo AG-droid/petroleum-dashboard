@@ -79,7 +79,7 @@ cd petroleum-dashboard/poc
 python3 -m http.server 8080
 ```
 
-Then open **http://localhost:8080** in Chrome.
+Then open **http://localhost:8080** in Chrome. The dealer app is at **http://localhost:8080/dealer/** (see [Prahari for dealers](#prahari-for-dealers)).
 
 On macOS you can instead double-click [`poc/start.command`](poc/start.command). It picks a free port and opens the browser for you.
 
@@ -190,6 +190,22 @@ A sortable, filterable table of every outlet: status, sales today, achievement, 
 Ask questions in plain language, such as *"Summarise my area"*, *"Which outlets may run dry?"* or *"How is Maa Fuel Point doing?"*. Answers are computed from the live data, with clickable links to outlets and trucks. It is rule-based today; an LLM would replace it in a later phase.
 
 ![Assistant](docs/screenshots/10-copilot.png)
+
+### Prahari for dealers
+
+The dealer's side of Prahari, at [`/dealer/`](poc/dealer/README.md). It has the same layout as the Sales Officer dashboard: a live map, a left panel, an outlet panel, overlays, search, an assistant and Present mode. Everything is centred on one dealer and their outlets. The demo dealer runs two of the outlets above, **990104 Royal Service Station** and **990118 Aravali Petroleum**, so both apps show the same tanks, orders and trucks.
+
+- **Priorities that say what to do.** Each item gives the reason, the money at stake and the fix as one button. For example: *pay ₹10.91 lakh to release the diesel order before the tank runs dry*, *the premium petrol pump is ₹0.50 below today's price*, *yesterday's petrol load was 85 L short: raise a claim*. **Why?** shows the numbers behind it.
+- **Order, pay, track, receive.** A suggested order packs whole truck compartments. Payment works by RTGS/NEFT: the dealer pays from their own bank and records the UTR here; the app never moves money or asks for bank logins. The truck then appears on the map driving the real roads, and the receipt check raises a shortage claim when the load arrives short.
+- **Outlet panel.** Tanks show the dead stock hatched, and run-dry times use usable stock and the hourly sales pattern. The panel also covers pumps and the price board, sales against target, integrity checks (prices and presets, nozzles not selling, flow rate, water, dispenser events with action-taken reports) and compliance renewals.
+- **Account, compliance, performance, messages with the Sales Officer** and a rule-based **assistant** (*"When will diesel run out?"*, *"How much do I need to pay?"*).
+- **Works on a phone.** The left panel becomes a bottom sheet and the rail becomes a tab bar.
+
+Try **Present** for the guided story, or open `/dealer/#outlet=990118&tab=integrity`. All thresholds live in [`poc/dealer/js/config.js`](poc/dealer/js/config.js), and `make dealer` checks the engine at three times of day.
+
+![Prahari for dealers: the dealer's outlets on the map with the Priorities list](docs/screenshots/11-dealer-map.png)
+
+![Dealer outlet panel: next delivery waiting for payment, usable stock and run-dry times](docs/screenshots/12-dealer-outlet.png)
 
 ## 5. Five-minute demo script
 
