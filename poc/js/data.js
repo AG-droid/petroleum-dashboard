@@ -282,6 +282,8 @@
   S.stamp.compliance.irregularities.push({ date: NOW - 11 * DAY, text: 'Fire extinguisher refill overdue (2 units)', status: 'Open' });
   // 9. Credit overdue
   outlets[35].credit.overdueDays = 38;
+  // 10. One dealer runs two outlets (the dealer app's demo account: poc/dealer/)
+  S.stamp.dealer = S.dryout.dealer;
 
   // ---------- Depots / terminals ----------
   const depots = [

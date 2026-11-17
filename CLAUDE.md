@@ -10,6 +10,7 @@ is **public**: never commit secrets, personal data, private plans (they live in 
 | Path | What |
 | --- | --- |
 | `poc/` | The dashboard: static HTML/CSS/vanilla JS, MapLibre map, in-browser demo simulation |
+| `poc/dealer/` | The dealer app, the same layout as the Sales Officer dashboard on the same synthetic world: map, Priorities, outlet panel, orders, payment, tracking; logic in `js/engine.js`, thresholds in `js/config.js`, checked by `tools/check_dealer.mjs` |
 | `backend/` | Python 3.12 package `prahari`: FastAPI API, SQLAlchemy models, Alembic migrations, importers, rules engine, demo feed, CLI |
 | `backend/src/prahari/ingest/formats.py` | The source-file layouts (modelled on OMC registers; not an official spec) |
 | `backend/src/prahari/services/state.py` | The single place raw records become outlet state (stock, cover, variation …) |

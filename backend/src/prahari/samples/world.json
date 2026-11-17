@@ -1,13 +1,13 @@
 {
  "schema": 1,
  "note": "Synthetic data. Every outlet, dealer, number and plate is fictional.",
- "exported_at": "2026-11-15T13:47:01.987Z",
+ "exported_at": "2026-11-15T18:53:42.094Z",
  "meta": {
   "salesArea": "Gurugram Retail Sales Area",
   "division": "Gurugram Divisional Office",
   "state": "Haryana State Office",
   "officer": "Sales Officer, Gurugram Retail Sales Area",
-  "generatedAt": 1794750421987
+  "generatedAt": 1794768822094
  },
  "products": [
   {
@@ -6757,8 +6757,8 @@
    "automated": true,
    "automation_online": true,
    "dealer": {
-    "name": "Sanjay Rao",
-    "since": 2022
+    "name": "Kavita Kataria",
+    "since": 2004
    },
    "daily_kl": {
     "MS": 4.49133148261506,

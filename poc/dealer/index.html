@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0d0f">
+<title>Prahari · Dealer</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="../vendor/maplibre-gl-4.7.1/maplibre-gl.css" rel="stylesheet">
+<link href="../css/styles.css" rel="stylesheet">
+<link href="css/dealer.css" rel="stylesheet">
+</head>
+<body class="dealer">
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 16 16"><path d="M8 1.5 14 5v6l-6 3.5L2 11V5z" fill="none" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="#111"/></svg></div>
+      <span class="brand-name">Prahari</span>
+      <span class="role-tag">Dealer</span>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="scope-wrap">
+      <button class="area-select" id="areaSelect" aria-haspopup="listbox"><span id="scopeLabel">All outlets</span> <span class="faint" id="scopeSub"></span>
+        <svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px;color:var(--text-3)"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="menu hidden" id="scopeMenu" role="listbox"></div>
+    </div>
+    <button id="searchBtn" class="search">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      Search outlets, orders, trucks <kbd>⌘K</kbd></button>
+    <div class="tb-right">
+      <button class="present-btn" id="presentBtn" title="Start the guided presentation"><svg viewBox="0 0 12 12"><path d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg>Present</button>
+      <div class="seg speed" id="speedSeg" title="Demo clock speed: watch orders load, travel and arrive">
+        <button data-speed="1" class="active">1×</button><button data-speed="10">10×</button><button data-speed="60">60×</button><button data-speed="300">300×</button>
+      </div>
+      <span class="demo-tag" title="Everything shown is generated sample data">Demo data</span>
+      <span id="clock"></span>
+      <div class="avatar" id="avatar"></div>
+    </div>
+  </header>
+
+  <nav id="rail" aria-label="Sections">
+    <button data-view="ops" data-label="Map" class="active"><svg class="i" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg></button>
+    <button data-view="outlets" data-label="Outlets"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-5h6v5"/></svg></button>
+    <button data-view="logistics" data-label="Orders & trucks"><svg class="i" viewBox="0 0 24 24"><path d="M2 7h11v9H2zM13 10h4l4 4v2h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></button>
+    <button data-view="account" data-label="Account & payments"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></button>
+    <button data-view="compliance" data-label="Compliance"><svg class="i" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg></button>
+    <button data-view="analytics" data-label="Performance"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/></svg></button>
+    <div class="rail-spacer"></div>
+    <button data-view="messages" data-label="Sales Officer"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></button>
+    <button data-view="copilot" data-label="Assistant"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+  </nav>
+
+  <main id="stage">
+    <div id="map"></div>
+
+    <div id="mapControls">
+      <div class="seg" id="basemapSeg">
+        <button data-basemap="dark" class="active">Map</button>
+        <button data-basemap="sat">Satellite</button>
+      </div>
+      <div class="seg">
+        <button id="btn3d" title="Tilt the map">3D</button>
+        <button id="btnHome" title="Show all your outlets"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div>
+      <div style="position:relative">
+        <div class="seg"><button id="btnLayers"><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>Layers</button></div>
+        <div class="layers-pop hidden" id="layersPop">
+          <div class="lp-title">Show on map</div>
+          <label>Your outlets<span class="toggle"><input type="checkbox" data-layer="outlets" checked><span></span></span></label>
+          <label>Your tank trucks<span class="toggle"><input type="checkbox" data-layer="tankers" checked><span></span></span></label>
+          <label>Delivery routes<span class="toggle"><input type="checkbox" data-layer="routes" checked><span></span></span></label>
+          <label>Supply points<span class="toggle"><input type="checkbox" data-layer="depots" checked><span></span></span></label>
+          <label>Catchment (3 km)<span class="toggle"><input type="checkbox" data-layer="catchment"><span></span></span></label>
+          <label>Competitor outlets<span class="toggle"><input type="checkbox" data-layer="competitors"><span></span></span></label>
+          <label>Truck road network<span class="toggle"><input type="checkbox" data-layer="roadnet"><span></span></span></label>
+          <label>Sales area boundary<span class="toggle"><input type="checkbox" data-layer="area" checked><span></span></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div id="mapNotice" class="hidden"></div>
+
+    <div id="legend">
+      <span><i class="dot ok"></i>Running normally</span>
+      <span><i class="dot warn"></i>Needs attention</span>
+      <span><i class="dot crit"></i>Urgent</span>
+      <span><span class="lg-truck"></span>Your truck</span>
+    </div>
+
+    <aside id="leftPanel" class="panel"></aside>
+    <aside id="rightPanel" class="panel hidden"></aside>
+    <section id="overlay" class="overlay hidden"></section>
+  </main>
+</div>
+
+<div id="palette" class="hidden">
+  <div class="pal-box">
+    <div class="pal-input-row"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="palInput" placeholder="Search outlets, orders, invoices, trucks, UTRs" autocomplete="off"></div>
+    <div id="palResults"></div>
+  </div>
+</div>
+<div id="modal" class="hidden" role="dialog" aria-modal="true"><div class="modal-box"></div></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="tooltip"></div>
+
+<script src="../vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
+<script src="../js/roadnet.js"></script>
+<script src="../js/roads.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/charts.js"></script>
+<script src="js/config.js"></script>
+<script src="js/world.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/forms.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/account.js"></script>
+<script src="js/map.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/views.js"></script>
+<script src="js/tour.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

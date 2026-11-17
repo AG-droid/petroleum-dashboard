@@ -4,6 +4,8 @@
 
 > **Status:** proof of concept, running on **synthetic data** for the Gurugram Sales Area (Haryana).
 > No real oil company data, branding or systems are used.
+>
+> **New: Prahari for dealers** ([`poc/dealer/`](poc/dealer/README.md)), the dealer's side, built exactly like the Sales Officer dashboard. A live map of the dealer's outlets and trucks, with a Priorities list built from the outlet's data. The dealer can order fuel, pay by RTGS/NEFT (UTR recorded; no money moved), track the truck and check the receipt.
 
 ![PRAHARI operations map: the Gurugram Sales Area with live outlets, tank trucks and supply points](docs/screenshots/01-ops-map.png)
 
@@ -77,7 +79,7 @@ cd petroleum-dashboard/poc
 python3 -m http.server 8080
 ```
 
-Then open **http://localhost:8080** in Chrome.
+Then open **http://localhost:8080** in Chrome. The dealer app is at **http://localhost:8080/dealer/** (see [Prahari for dealers](#prahari-for-dealers)).
 
 On macOS you can instead double-click [`poc/start.command`](poc/start.command). It picks a free port and opens the browser for you.
 
@@ -189,6 +191,22 @@ Ask questions in plain language, such as *"Summarise my area"*, *"Which outlets 
 
 ![Assistant](docs/screenshots/10-copilot.png)
 
+### Prahari for dealers
+
+The dealer's side of Prahari, at [`/dealer/`](poc/dealer/README.md). It has the same layout as the Sales Officer dashboard: a live map, a left panel, an outlet panel, overlays, search, an assistant and Present mode. Everything is centred on one dealer and their outlets. The demo dealer runs two of the outlets above, **990104 Royal Service Station** and **990118 Aravali Petroleum**, so both apps show the same tanks, orders and trucks.
+
+- **Priorities that say what to do.** Each item gives the reason, the money at stake and the fix as one button. For example: *pay ₹10.91 lakh to release the diesel order before the tank runs dry*, *the premium petrol pump is ₹0.50 below today's price*, *yesterday's petrol load was 85 L short: raise a claim*. **Why?** shows the numbers behind it.
+- **Order, pay, track, receive.** A suggested order packs whole truck compartments. Payment works by RTGS/NEFT: the dealer pays from their own bank and records the UTR here; the app never moves money or asks for bank logins. The truck then appears on the map driving the real roads, and the receipt check raises a shortage claim when the load arrives short.
+- **Outlet panel.** Tanks show the dead stock hatched, and run-dry times use usable stock and the hourly sales pattern. The panel also covers pumps and the price board, sales against target, integrity checks (prices and presets, nozzles not selling, flow rate, water, dispenser events with action-taken reports) and compliance renewals.
+- **Account, compliance, performance, messages with the Sales Officer** and a rule-based **assistant** (*"When will diesel run out?"*, *"How much do I need to pay?"*).
+- **Works on a phone.** The left panel becomes a bottom sheet and the rail becomes a tab bar.
+
+Try **Present** for the guided story, or open `/dealer/#outlet=990118&tab=integrity`. All thresholds live in [`poc/dealer/js/config.js`](poc/dealer/js/config.js), and `make dealer` checks the engine at three times of day.
+
+![Prahari for dealers: the dealer's outlets on the map with the Priorities list](docs/screenshots/11-dealer-map.png)
+
+![Dealer outlet panel: next delivery waiting for payment, usable stock and run-dry times](docs/screenshots/12-dealer-outlet.png)
+
 ## 5. Five-minute demo script
 
 The synthetic data includes scripted storylines so a demo always has something real-looking to act on.
@@ -265,6 +283,7 @@ petroleum-dashboard/
 │   ├── README.md                 ← POC-specific notes
 │   ├── css/styles.css
 │   ├── js/                       ← data, sim, map, ui, tour, cctv, charts, api, main
+│   ├── dealer/                   ← the dealer app: outlets, recommended actions, orders, payment (see its README)
 │   └── vendor/                   ← bundled MapLibre GL JS (works offline)
 ├── backend/                      ← Python/FastAPI backend: importers, rules, API (see its README)
 │   ├── src/prahari/

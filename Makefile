@@ -7,7 +7,7 @@ BACKEND := cd backend &&
 export PRAHARI_DATABASE_URL ?= postgresql+psycopg://prahari:prahari@localhost:5433/prahari
 
 .DEFAULT_GOAL := help
-.PHONY: help up down logs ps db demo-data reset dev fmt lint typecheck test check roads export-world lan-url
+.PHONY: help up down logs ps db demo-data reset dev fmt lint typecheck test check roads dealer export-world lan-url
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2}'
@@ -50,11 +50,14 @@ typecheck: ## Static type checks (mypy --strict)
 test: db ## Run the backend tests against the compose database
 	$(BACKEND) $(UV) run pytest -q
 
-check: lint typecheck test roads ## Everything that must pass before a commit
+check: lint typecheck test roads dealer ## Everything that must pass before a commit
 	$(BACKEND) PRAHARI_DATABASE_URL=$(PRAHARI_DATABASE_URL) $(UV) run alembic -c src/prahari/alembic.ini check
 
 roads: ## Check the dashboard's road routing (Node)
 	node tools/check_roads.mjs
+
+dealer: ## Check the dealer app's forecasts, orders and recommendations (Node)
+	node tools/check_dealer.mjs
 
 export-world: ## Re-export the dashboard's synthetic world for the sample generator
 	node tools/export_world.mjs
