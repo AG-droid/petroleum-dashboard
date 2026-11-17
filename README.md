@@ -1,6 +1,6 @@
 # Petroleum Dashboard: PRAHARI
 
-**A unified operations platform for India's fuel retail network.** It brings logistics, supply, retail outlets, compliance and security together in one live operational picture. It's built first for an oil company's **Sales Officer**, and designed to grow into a Palantir Gotham / Arondite Cobalt-style platform for the whole downstream fuel chain.
+**A unified operations platform for India's fuel retail network.** It brings logistics, supply, retail outlets, compliance and security together in one live operational picture. It's built first for an oil company's **Sales Officer**, and designed to grow into a Palantir Gotham-style platform for the whole downstream fuel chain.
 
 > **Status:** proof of concept, running on **synthetic data** for the Gurugram Sales Area (Haryana).
 > No real oil company data, branding or systems are used.
